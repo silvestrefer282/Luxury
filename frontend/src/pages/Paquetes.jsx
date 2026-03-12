@@ -146,6 +146,41 @@ const catalogData = [
             'Dj, Proyector and Todo el equipo de luces'
         ],
         extraHour: '$2200'
+    },
+    {
+        id: 6,
+        category: 'Banquetes',
+        title: 'BANQUETE CLÁSICO',
+        price: '390.00',
+        capacity: 'Variedad',
+        duration: '7',
+        img: '/images/banqueteClasico390Imag1.jpeg',
+        gallery: [
+            '/images/banqueteClasico390Imag1.jpeg',
+            '/images/banqueteClasico390Imag2.jpeg',
+            '/images/banqueteClasico390Imag3.jpeg',
+            '/images/banqueteClasico390Imag4.jpeg',
+            '/images/banqueteClasico390Imag5.jpeg',
+            '/images/banqueteClasico390Imag6.jpeg',
+            '/images/banqueteClasico390Imag7.jpeg',
+            '/images/banqueteClasico390Imag8.jpeg',
+            '/images/banqueteClasico390Imag9.jpeg'
+        ],
+        desc: 'Servicio exclusivo de banquete con la mejor relación calidad-precio. Un clásico renovado con montaje completo.',
+        isPerPerson: true,
+        included: [
+            'Menú 3 tiempos',
+            'Refresco y hielo ilimitado',
+            'Centros de mesa (base de cristal)',
+            'Montaje de gala (plato, copa, servilleta tela, cubierto)',
+            'Mesas espejo, sillas Tiffany y oval',
+            'Dj con sonido Profesional',
+            'Luz robótica y arquitectónica',
+            '7 hrs de servicio',
+            'Carpa y Periqueras',
+            'Mampara para selfies'
+        ],
+        extraHour: '$2200'
     }
 ];
 

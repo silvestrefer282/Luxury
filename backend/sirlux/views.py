@@ -5,14 +5,15 @@ from datetime import datetime
 from decimal import Decimal
 
 from .models import (
-    Usuario, Cliente, Paquete, Menu, ServicioAdicional, 
-    Reservacion, Degustacion, ConfiguracionSistema
+    Usuario, Cliente, Paquete, ImagenPaquete, Menu, CategoriaMenu, Platillo, ServicioAdicional, 
+    Reservacion, Degustacion, ConfiguracionSistema, Galeria
 )
 from .serializers import (
     UsuarioSerializer, ClienteSerializer, PaqueteSerializer, 
-    MenuSerializer, ServicioAdicionalSerializer, 
+    MenuSerializer, CategoriaMenuSerializer, PlatilloSerializer, 
+    ServicioAdicionalSerializer, 
     ReservacionSerializer, DegustacionSerializer, 
-    ConfiguracionSistemaSerializer
+    ConfiguracionSistemaSerializer, GaleriaSerializer
 )
 from .services import calcular_costo_reservacion, verificar_disponibilidad
 
@@ -100,6 +101,28 @@ class PaqueteViewSet(viewsets.ModelViewSet):
     queryset = Paquete.objects.all()
     serializer_class = PaqueteSerializer
 
+    def perform_create(self, serializer):
+        paquete = serializer.save()
+        galeria = self.request.FILES.getlist('galeria_imgs')
+        for i, img in enumerate(galeria):
+            ImagenPaquete.objects.create(paquete=paquete, imagen=img, orden=i)
+
+    def perform_update(self, serializer):
+        paquete = serializer.save()
+        
+        # 1. Eliminar imágenes específicas si se envían sus IDs
+        deleted_ids = self.request.data.getlist('deleted_gallery_ids')
+        if deleted_ids:
+            ImagenPaquete.objects.filter(id__in=deleted_ids, paquete=paquete).delete()
+
+        # 2. Agregar nuevas imágenes sin borrar las anteriores (Append)
+        galeria = self.request.FILES.getlist('galeria_imgs')
+        if galeria:
+            # Calculamos el orden inicial basado en cuántas ya hay
+            ultimo_orden = paquete.galeria.count()
+            for i, img in enumerate(galeria):
+                ImagenPaquete.objects.create(paquete=paquete, imagen=img, orden=ultimo_orden + i)
+
 class MenuViewSet(viewsets.ModelViewSet):
     queryset = Menu.objects.all()
     serializer_class = MenuSerializer
@@ -108,6 +131,22 @@ class ServicioAdicionalViewSet(viewsets.ModelViewSet):
     queryset = ServicioAdicional.objects.all()
     serializer_class = ServicioAdicionalSerializer
 
+class CategoriaMenuViewSet(viewsets.ModelViewSet):
+    queryset = CategoriaMenu.objects.all()
+    serializer_class = CategoriaMenuSerializer
+
+class PlatilloViewSet(viewsets.ModelViewSet):
+    queryset = Platillo.objects.all()
+    serializer_class = PlatilloSerializer
+
 class ClienteViewSet(viewsets.ModelViewSet):
     queryset = Cliente.objects.all()
     serializer_class = ClienteSerializer
+
+class DegustacionViewSet(viewsets.ModelViewSet):
+    queryset = Degustacion.objects.all()
+    serializer_class = DegustacionSerializer
+
+class GaleriaViewSet(viewsets.ModelViewSet):
+    queryset = Galeria.objects.all()
+    serializer_class = GaleriaSerializer

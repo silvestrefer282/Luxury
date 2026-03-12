@@ -19,9 +19,15 @@
   --color-primary-900: #000000;
   --color-primary-950: #000000;
 
+  /* Luxury Palette */
+  --color-luxury-black: #1A1A1A;
+  --color-luxury-gray-dark: #2B2B2B;
+  --color-luxury-gray-mid: #555555;
+  --color-luxury-gray-light: #BFBFBF;
+  --color-luxury-white: #F5F5F5;
+
   --color-accent: #000000;
   /* Luxury magazine accent is often deep black */
-  --color-gold: #c5a059;
 
   --shadow-luxury: 0 10px 50px -12px rgba(0, 0, 0, 0.15);
 }
