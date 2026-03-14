@@ -1,0 +1,2 @@
+Usuarios registrados:
+Username: parra.anita06@gmail.com, Email: parra.anita06@gmail.com, Rol: Cliente, Active: True, Staff: False, Hero: False

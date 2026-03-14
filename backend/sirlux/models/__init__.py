@@ -7,3 +7,5 @@ from .menus import Menu, CategoriaMenu, Platillo
 from .degustaciones import Degustacion
 from .configuracion import ConfiguracionSistema
 from .galeria import Galeria
+from .contratos import Contrato, PagoContrato
+from .testimonios import Testimonio

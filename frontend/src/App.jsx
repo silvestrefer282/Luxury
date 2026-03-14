@@ -13,6 +13,7 @@ import ServiciosPage from './pages/Servicios';
 import Galeria from './pages/Galeria';
 import Menus from './pages/Menus';
 import Disponibilidad from './pages/Disponibilidad';
+import MisReservas from './pages/MisReservas';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -37,10 +38,15 @@ const AnimatedRoutes = () => {
         <Route path="/menus" element={<Menus />} />
         <Route path="/disponibilidad" element={<Disponibilidad />} />
 
-        {/* Rutas Cliente */}
+        {/* Rutas Cliente / Staff */}
         <Route path="/reservar" element={
-          <ProtectedRoute allowedRoles={['Cliente', 'Administrador']}>
+          <ProtectedRoute allowedRoles={['Cliente', 'Administrador', 'Encargado']}>
             <Reservar />
+          </ProtectedRoute>
+        } />
+        <Route path="/mis-reservas" element={
+          <ProtectedRoute allowedRoles={['Cliente', 'Administrador', 'Encargado']}>
+            <MisReservas />
           </ProtectedRoute>
         } />
 

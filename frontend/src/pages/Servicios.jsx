@@ -1,34 +1,39 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from "../components/Navbar";
-import { motion } from 'framer-motion';
-import { Camera, Music, Sparkles, Clock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import Footer from "../components/Footer";
+import { motion, AnimatePresence } from 'framer-motion';
+import { Camera, Music, Sparkles, Clock, ArrowRight, CheckCircle2, Utensils, Layout } from 'lucide-react';
+import { servicioService } from '../services/api';
 
-const ServiceCard = ({ title, description, image, icon: Icon, price, delay }) => (
+const ServiceCard = ({ title, description, image, icon: Icon, price, delay, category }) => (
     <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay }}
         viewport={{ once: true }}
-        className="group relative bg-white rounded-[2.5rem] overflow-hidden border border-primary-100 hover:border-accent/30 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/5"
+        className="group relative bg-white rounded-[2.5rem] overflow-hidden border border-primary-100 hover:border-accent/30 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/5 flex flex-col"
     >
         <div className="relative h-72 overflow-hidden">
             <img
-                src={image}
+                src={image || "/images/placeholder.png"}
                 alt={title}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-8">
-                <p className="text-white/90 text-sm font-medium">Desde ${price}</p>
+                <p className="text-white/90 text-sm font-medium">Desde ${Number(price).toLocaleString()}</p>
             </div>
             <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-lg text-accent">
                 <Icon size={24} />
             </div>
+            <div className="absolute top-6 left-6 bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                {category}
+            </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-8 flex-1 flex flex-col">
             <h3 className="text-2xl font-serif mb-3 group-hover:text-accent transition-colors duration-300">{title}</h3>
-            <p className="text-primary-500 mb-6 leading-relaxed">
-                {description}
+            <p className="text-primary-500 mb-6 leading-relaxed line-clamp-3">
+                {description || "Servicio premium diseñado para elevar la calidad y sofisticación de su evento."}
             </p>
 
             <div className="flex items-center justify-between mt-auto">
@@ -42,40 +47,33 @@ const ServiceCard = ({ title, description, image, icon: Icon, price, delay }) =>
 );
 
 function Servicios() {
-    const additionalServices = [
-        {
-            title: "Decoración Premium",
-            description: "Transformamos espacios en escenarios de ensueño con arreglos florales exóticos y diseño personalizado.",
-            image: "/images/decor.png",
-            icon: Sparkles,
-            price: "1,200",
-            delay: 0.1
-        },
-        {
-            title: "Audio & DJ Set",
-            description: "Sistemas de sonido Line Array y DJs expertos que crearán la atmósfera perfecta para cada momento.",
-            image: "/images/dj.png",
-            icon: Music,
-            price: "800",
-            delay: 0.2
-        },
-        {
-            title: "Fotografía Profesional",
-            description: "Capturamos cada emoción con equipos de última generación y un enfoque artístico inigualable.",
-            image: "/images/photo.png",
-            icon: Camera,
-            price: "1,500",
-            delay: 0.3
-        },
-        {
-            title: "Horas Extendidas",
-            description: "¿La fiesta no termina? Amplía la magia de tu evento con nuestro servicio de horas adicionales.",
-            image: "/images/extra.png",
-            icon: Clock,
-            price: "350",
-            delay: 0.4
+    const [services, setServices] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const getIconForCategory = (category) => {
+        switch (category) {
+            case 'Entretenimiento': return Music;
+            case 'Decoración': return Sparkles;
+            case 'Gastronomía': return Utensils;
+            case 'Estructura': return Layout;
+            case 'Fotografía': return Camera;
+            default: return Sparkles;
         }
-    ];
+    };
+
+    useEffect(() => {
+        const fetchServices = async () => {
+            try {
+                const response = await servicioService.getAll();
+                setServices(response.data);
+            } catch (error) {
+                console.error("Error fetching services:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchServices();
+    }, []);
 
     return (
         <div className="min-h-screen bg-primary-50/30">
@@ -108,11 +106,27 @@ function Servicios() {
             {/* Services Grid */}
             <section className="py-20 relative">
                 <div className="container px-6 mx-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-10 xl:gap-14">
-                        {additionalServices.map((service, index) => (
-                            <ServiceCard key={index} {...service} />
-                        ))}
-                    </div>
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-20">
+                            <div className="w-12 h-12 border-t-2 border-accent rounded-full animate-spin mb-6"></div>
+                            <span className="text-sm uppercase tracking-widest text-primary-400 font-bold">Curando Catálogo...</span>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-10 xl:gap-14">
+                            {services.map((service, index) => (
+                                <ServiceCard 
+                                    key={service.id} 
+                                    title={service.nombre}
+                                    description={service.descripcion}
+                                    image={service.imagen}
+                                    icon={getIconForCategory(service.categoria)}
+                                    price={service.precio_unitario}
+                                    category={service.categoria}
+                                    delay={index * 0.1}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -178,6 +192,8 @@ function Servicios() {
                     </button>
                 </div>
             </section>
+
+            <Footer />
         </div>
     );
 }

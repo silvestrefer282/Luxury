@@ -1,19 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { reservacionService } from '../services/api';
+
+// Mover hoy fuera para evitar re-creación constante
+const today = new Date();
+today.setHours(0, 0, 0, 0);
 
 const Disponibilidad = () => {
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+    const [bookedDates, setBookedDates] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [direction, setDirection] = useState(0);
 
-    // Mock booked dates
-    const bookedDates = [
-        { day: 15, month: 2, year: 2024, type: 'booked', label: 'Boda Real' },
-        { day: 22, month: 2, year: 2024, type: 'booked', label: 'XV Años Editorial' },
-        { day: 10, month: 3, year: 2024, type: 'booked', label: 'Cena de Gala' },
-        { day: 18, month: 3, year: 2024, type: 'cleaning', label: 'Mantenimiento' },
-    ];
+    useEffect(() => {
+        const fetchReservations = async () => {
+            setLoading(true);
+            try {
+                const response = await reservacionService.getAll();
+                const mapped = response.data
+                    .filter(res => res.estado !== 'Cancelada')
+                    .map(res => {
+                        const [year, month, day] = res.fecha.split('-').map(Number);
+                        return {
+                            day: day,
+                            month: month - 1,
+                            year: year,
+                            type: res.estado === 'Confirmada' ? 'booked' : 'pending',
+                            label: res.nombre_evento || 'Evento Reservado'
+                        };
+                    });
+                setBookedDates(mapped);
+            } catch (error) {
+                console.error("Error fetching availability:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchReservations();
+    }, []);
 
     const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
     const firstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -24,11 +51,17 @@ const Disponibilidad = () => {
     ];
 
     const handlePrevMonth = () => {
-        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+        setDirection(-1);
+        setCurrentDate(prev => {
+            const next = new Date(prev.getFullYear(), prev.getMonth() - 1, 1);
+            const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            return next >= currentMonthStart ? next : prev;
+        });
     };
 
     const handleNextMonth = () => {
-        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+        setDirection(1);
+        setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
     };
 
     const isDateBooked = (day) => {
@@ -39,38 +72,73 @@ const Disponibilidad = () => {
         );
     };
 
+    const variants = {
+        enter: (direction) => ({
+            x: direction > 0 ? 40 : -40,
+            opacity: 0
+        }),
+        center: {
+            x: 0,
+            opacity: 1
+        },
+        exit: (direction) => ({
+            x: direction < 0 ? 40 : -40,
+            opacity: 0
+        })
+    };
+
     const renderCalendar = () => {
+        if (loading) {
+            return (
+                <div className="col-span-7 py-40 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm">
+                    <div className="w-12 h-12 border-t-2 border-black rounded-full animate-spin mb-6"></div>
+                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-black/40">Sincronizando Agenda Luxury...</span>
+                </div>
+            );
+        }
+
         const totalDays = daysInMonth(currentDate.getFullYear(), currentDate.getMonth());
         const startDay = firstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth());
         const calendarDays = [];
 
-        // Padding for first week
         for (let i = 0; i < startDay; i++) {
-            calendarDays.push(<div key={`empty-${i}`} className="h-32 border-b border-r border-black/5 bg-gray-50/30"></div>);
+            calendarDays.push(<div key={`empty-${i}`} className="h-40 border-b border-r border-black/5 bg-gray-50/10"></div>);
         }
 
         for (let d = 1; d <= totalDays; d++) {
             const booking = isDateBooked(d);
+            const dateInCalendar = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
+            const isPast = dateInCalendar < today;
+
             calendarDays.push(
-                <div key={d} className="h-32 border-b border-r border-black/5 relative group p-4 transition-colors hover:bg-black/5">
-                    <span className={`text-lg font-serif ${booking ? 'opacity-20' : 'opacity-100'}`}>{d}</span>
+                <div 
+                    key={d} 
+                    className={`h-40 border-b border-r border-black/5 relative group p-6 transition-all ${
+                        isPast ? 'bg-transparent opacity-40' : 'hover:bg-black/5 cursor-pointer'
+                    }`}
+                >
+                    <span className={`text-xl font-serif ${booking ? 'opacity-20' : 'opacity-100'}`}>{d}</span>
 
                     {booking && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
-                            <div className={`w-full h-full ${booking.type === 'cleaning' ? 'bg-black/5' : 'bg-black'} flex flex-col items-center justify-center text-center p-2 overflow-hidden`}>
-                                <span className={`text-[7px] uppercase tracking-[0.2em] font-black ${booking.type === 'cleaning' ? 'text-black/40' : 'text-white'}`}>
-                                    {booking.type === 'cleaning' ? 'Limpieza' : 'Reservado'}
+                        <div className="absolute inset-x-2 inset-y-2 flex flex-col items-center justify-center">
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className={`w-full h-full ${booking.type === 'pending' ? 'bg-black/5 border border-black/10' : 'bg-black'} flex flex-col items-center justify-center text-center p-4 shadow-xl overflow-hidden`}
+                            >
+                                <span className={`text-[8px] uppercase tracking-[0.3em] font-black mb-1 ${booking.type === 'pending' ? 'text-black/60' : 'text-white'}`}>
+                                    {booking.type === 'pending' ? 'En Proceso' : 'Confirmado'}
                                 </span>
-                                <span className={`text-[8px] font-serif italic truncate w-full ${booking.type === 'cleaning' ? 'text-black/20' : 'text-white/40'}`}>
+                                <span className={`text-[9px] font-serif italic truncate w-full ${booking.type === 'pending' ? 'text-black/30' : 'text-white/40'}`}>
                                     {booking.label}
                                 </span>
-                            </div>
+                            </motion.div>
                         </div>
                     )}
 
-                    {!booking && (
-                        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <CheckCircle2 size={12} className="text-black/20" />
+                    {!booking && !isPast && (
+                        <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <CheckCircle2 size={16} className="text-black/10" />
                         </div>
                     )}
                 </div>
@@ -98,38 +166,70 @@ const Disponibilidad = () => {
                         </p>
                         <div className="flex gap-10 text-[9px] uppercase tracking-widest font-black">
                             <div className="flex items-center gap-3"><div className="w-2 h-2 bg-black"></div> Reservado</div>
-                            <div className="flex items-center gap-3"><div className="w-2 h-2 bg-black/10"></div> Limpieza</div>
+                            <div className="flex items-center gap-3"><div className="w-2 h-2 bg-black/5 border border-black/10"></div> En Proceso</div>
                             <div className="flex items-center gap-3"><div className="w-2 h-2 border border-black/10"></div> Disponible</div>
                         </div>
                     </div>
                 </div>
 
-                {/* Calendar Desktop */}
-                <div className="bg-white border-t border-l border-black/5 shadow-2xl">
+                {/* Single Month View with Navigation */}
+                <div className="bg-white border-t border-l border-black/10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] overflow-hidden">
                     {/* Navigation */}
-                    <div className="flex justify-between items-center p-10 border-b border-black/5">
-                        <button onClick={handlePrevMonth} className="p-4 hover:bg-black hover:text-white transition-all border border-black/5">
+                    <div className="flex justify-between items-center p-12 border-b border-black/5 bg-white relative z-20">
+                        <button 
+                            onClick={handlePrevMonth} 
+                            className={`w-14 h-14 flex items-center justify-center transition-all border border-black/5 rounded-full ${
+                                currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear()
+                                ? 'opacity-0 pointer-events-none' 
+                                : 'hover:bg-black hover:text-white cursor-pointer'
+                            }`}
+                        >
                             <ChevronLeft size={20} />
                         </button>
-                        <h2 className="text-4xl font-serif uppercase tracking-widest italic">{monthNames[currentDate.getMonth()]} <span className="not-italic font-light opacity-30">{currentDate.getFullYear()}</span></h2>
-                        <button onClick={handleNextMonth} className="p-4 hover:bg-black hover:text-white transition-all border border-black/5">
+                        <AnimatePresence mode="wait" custom={direction}>
+                            <motion.h2 
+                                key={currentDate.getMonth()}
+                                custom={direction}
+                                variants={variants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{ type: 'spring', damping: 80, stiffness: 1000 }}
+                                className="text-5xl font-serif uppercase tracking-widest italic"
+                            >
+                                {monthNames[currentDate.getMonth()]} <span className="not-italic font-light opacity-30">{currentDate.getFullYear()}</span>
+                            </motion.h2>
+                        </AnimatePresence>
+                        <button onClick={handleNextMonth} className="w-14 h-14 flex items-center justify-center hover:bg-black hover:text-white transition-all border border-black/5 rounded-full">
                             <ChevronRight size={20} />
                         </button>
                     </div>
 
-                    {/* Weekdays */}
-                    <div className="grid grid-cols-7 text-center border-b border-black/5 bg-gray-50/50">
-                        {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
-                            <div key={d} className="py-6 text-[10px] uppercase tracking-[0.5em] font-black text-black/40 border-r border-black/5 last:border-r-0">
-                                {d}
+                    <AnimatePresence mode="wait" custom={direction}>
+                        <motion.div
+                            key={currentDate.getMonth() + '-' + currentDate.getFullYear()}
+                            custom={direction}
+                            variants={variants}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            transition={{ type: 'spring', damping: 80, stiffness: 1000 }}
+                        >
+                            {/* Weekdays */}
+                            <div className="grid grid-cols-7 text-center border-b border-black/5 bg-gray-50/30">
+                                {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
+                                    <div key={d} className="py-8 text-[11px] uppercase tracking-[0.6em] font-black text-black/30 border-r border-black/5 last:border-r-0">
+                                        {d}
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
 
-                    {/* Days Grid */}
-                    <div className="grid grid-cols-7 border-r border-black/5">
-                        {renderCalendar()}
-                    </div>
+                            {/* Days Grid */}
+                            <div className="grid grid-cols-7 border-r border-black/5">
+                                {renderCalendar()}
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
 
                 {/* Reservation Call to Action */}

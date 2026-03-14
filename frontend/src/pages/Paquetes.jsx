@@ -1,202 +1,71 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import PageTransition from '../components/PageTransition';
-import { Users, Clock, Info, X, CheckCircle2, ChevronRight, Star, Heart, Briefcase, PartyPopper, ChevronLeft } from 'lucide-react';
+import { Users, Clock, Info, X, Star, Heart, ChevronLeft, ChevronRight, Music, Sparkles, Utensils, Layout, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const catalogData = [
-    {
-        id: 1,
-        category: 'Básicos',
-        title: 'PAQUETE BÁSICO',
-        price: '17,900.00',
-        capacity: '150',
-        duration: '6',
-        img: '/images/basico150Imag1.jpeg',
-        gallery: [
-            '/images/basico150Imag1.jpeg',
-            '/images/basico150Imag2.jpeg',
-            '/images/basico150Imag3.jpeg',
-            '/images/basico150Imag4.jpeg'
-        ],
-        desc: 'Ideal para eventos íntimos y celebraciones esenciales con gran capacidad.',
-        included: [
-            'Alquiler del salon por 6 hrs',
-            'Mesas de espejo y sillas Tiffany',
-            'Mesa principal y Marco iluminado',
-            'Vajilla (para dos tiempos)',
-            'Dj con sonido Profesional',
-            'Luz robótica y arquitectónica',
-            'Meseros y Lava loza',
-            'Vigilancia para autos',
-            'Utensilios de mesa',
-            'Gas para calentar',
-            'Jabón y papel en baños'
-        ],
-        extraHour: '$1800',
-        notes: 'Pastel con Bases o Flotante MXN 25.00/p (Pan sabor capuchino o vainilla, Tres leches, Relleno Fresa, Durazno, Piña, Coco, Choco-Nuez)'
-    },
-    {
-        id: 2,
-        category: 'Banquetes',
-        title: 'BANQUETE CLÁSICO',
-        price: '520.00',
-        capacity: '50',
-        duration: '7',
-        img: '/images/banqueteClasico50Imag1.png',
-        gallery: [
-            '/images/banqueteClasico50Imag1.png',
-            '/images/banqueteClasico50Imag2.png',
-            '/images/banqueteClasico50Imag3.png',
-            '/images/banqueteClasico50Imag4.png',
-            '/images/banqueteClasico50Imag5.png',
-            '/images/banqueteClasico50Imag6.png'
-        ],
-        desc: 'Servicio completo con banquete de 3 tiempos y montaje premium.',
-        isPerPerson: true,
-        included: [
-            'Menú 3 tiempos',
-            'Refresco y hielo ilimitado',
-            'Centros de mesa (base de cristal)',
-            'Montaje premium (plato base, copa, servilleta tela, cubierto)',
-            'Mesas espejo, sillas Tiffany y oval',
-            'Dj con sonido, Luz robótica y arquitectónica',
-            '7 hrs de servicio',
-            'Carpa y Periqueras',
-            'Mampara para selfies y Cascadas de luz en el jardín',
-            'Menú impreso y Proyector'
-        ],
-        extraHour: '$2200'
-    },
-    {
-        id: 3,
-        category: 'Premium',
-        title: 'BANQUETE PREMIUM',
-        price: '490.00',
-        capacity: 'Variedad',
-        duration: '7',
-        img: '/images/banquetePremiumImag1.jpeg',
-        gallery: [
-            '/images/banquetePremiumImag1.jpeg',
-            '/images/banquetePremiumImag2.jpeg',
-            '/images/banquetePremiumImag3.jpeg',
-            '/images/banquetePremiumImag4.jpeg',
-            '/images/banquetePremiumImag5.jpeg',
-            '/images/banquetePremiumImag6.jpeg',
-            '/images/banquetePremiumImag7.jpeg',
-            '/images/banquetePremiumImag8.jpeg'
-        ],
-        desc: 'Nuestra opción más solicitada con menú de 3 tiempos y degustación.',
-        isPerPerson: true,
-        included: [
-            'Alquiler del salon por 7 hrs',
-            'Mesas de espejo, sillas Tiffany y oval',
-            'Menú 3 tiempos and Degustación para 2 personas',
-            'Refresco y hielo ilimitado',
-            'Pastel incluído',
-            'Barra de botanas and Centros de mesa (bases elegantes sin flor)',
-            'Dj con sonido, Luz robótica, Proyector',
-            'Juego inflable, Carpa, Periqueras',
-            'Mampara para selfies and Cascadas de luz'
-        ],
-        extraHour: '$2200'
-    },
-    {
-        id: 4,
-        category: 'Plata',
-        title: 'BANQUETE PLATA',
-        price: '540.00',
-        capacity: 'Variedad',
-        duration: '7',
-        img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=1000',
-        desc: 'Incluye souvenirs, tornafiesta y decoración especial de entrada.',
-        isPerPerson: true,
-        included: [
-            'Alquiler del salon por 7 hrs',
-            'Menú 3 tiempos and Degustación (2p)',
-            'Refresco y hielo ilimitado',
-            'Souvenirs and Torna fiesta',
-            'Decoración de entrada',
-            'Pastel and Barra de botanas',
-            'Dj con sonido and Luces robóticas',
-            'Carpa, Periqueras and Juego inflable'
-        ],
-        extraHour: '$2200'
-    },
-    {
-        id: 5,
-        category: 'Oro',
-        title: 'BANQUETE ORO',
-        price: '630.00',
-        capacity: 'Variedad',
-        duration: '8',
-        img: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&q=80&w=1000',
-        desc: 'El paquete de oro lujo con 8 horas de servicio y barman.',
-        isPerPerson: true,
-        included: [
-            'Alquiler del salon por 8 hrs',
-            'Menú 4 tiempos and Degustación (4p)',
-            'Barman (mano de obra - hielo y cristalería)',
-            'Refresco y hielo ilimitado',
-            'Torna fiesta and Decoración de entrada',
-            'Montaje premium (cubierto dorado, 2 copas)',
-            'Pastel and Barra de botanas',
-            'Dj, Proyector and Todo el equipo de luces'
-        ],
-        extraHour: '$2200'
-    },
-    {
-        id: 6,
-        category: 'Banquetes',
-        title: 'BANQUETE CLÁSICO',
-        price: '390.00',
-        capacity: 'Variedad',
-        duration: '7',
-        img: '/images/banqueteClasico390Imag1.jpeg',
-        gallery: [
-            '/images/banqueteClasico390Imag1.jpeg',
-            '/images/banqueteClasico390Imag2.jpeg',
-            '/images/banqueteClasico390Imag3.jpeg',
-            '/images/banqueteClasico390Imag4.jpeg',
-            '/images/banqueteClasico390Imag5.jpeg',
-            '/images/banqueteClasico390Imag6.jpeg',
-            '/images/banqueteClasico390Imag7.jpeg',
-            '/images/banqueteClasico390Imag8.jpeg',
-            '/images/banqueteClasico390Imag9.jpeg'
-        ],
-        desc: 'Servicio exclusivo de banquete con la mejor relación calidad-precio. Un clásico renovado con montaje completo.',
-        isPerPerson: true,
-        included: [
-            'Menú 3 tiempos',
-            'Refresco y hielo ilimitado',
-            'Centros de mesa (base de cristal)',
-            'Montaje de gala (plato, copa, servilleta tela, cubierto)',
-            'Mesas espejo, sillas Tiffany y oval',
-            'Dj con sonido Profesional',
-            'Luz robótica y arquitectónica',
-            '7 hrs de servicio',
-            'Carpa y Periqueras',
-            'Mampara para selfies'
-        ],
-        extraHour: '$2200'
-    }
-];
-
-const extraServices = [
-    { name: 'Montaje boda Civil', price: '$1,800.00', icon: Heart },
-    { name: 'Desayuno', price: '$330.00/p', icon: Clock },
-    { name: 'Recalentado Premium', price: '$15,900.00', icon: PartyPopper },
-    { name: 'Barra de Botanas', price: '$2,200.00', icon: Star },
-    { name: 'Dj Extra con Luz/Sonido', price: '$3,500.00', icon: Briefcase },
-    { name: 'Decoración de Entrada', price: '$3,200.00', icon: Star }
-];
+import { paqueteService, servicioService } from '../services/api';
 
 const Paquetes = () => {
+    const [catalogData, setCatalogData] = useState([]);
+    const [extraServices, setExtraServices] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedPack, setSelectedPack] = useState(null);
     const [filter, setFilter] = useState('Todos');
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchContent = async () => {
+            try {
+                const [packsRes, servicesRes] = await Promise.all([
+                    paqueteService.getAll(),
+                    servicioService.getAll()
+                ]);
+
+                const mappedPacks = packsRes.data.map(pkg => ({
+                    id: pkg.id,
+                    category: pkg.incluye_menu ? 'Banquetes' : 'Básicos',
+                    title: pkg.nombre.toUpperCase(),
+                    price: Number(pkg.precio_base).toLocaleString('es-MX', { minimumFractionDigits: 2 }),
+                    capacity: pkg.capacidad_personas,
+                    duration: pkg.duracion_horas,
+                    img: pkg.imagen || 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=1000',
+                    gallery: pkg.galeria?.length > 0 
+                        ? pkg.galeria.map(imgObj => imgObj.imagen) 
+                        : [pkg.imagen].filter(Boolean),
+                    desc: pkg.descripcion || 'Experiencia exclusiva diseñada para redefinir el estándar de la elegancia.',
+                    included: pkg.servicios_incluidos ? pkg.servicios_incluidos.split('\n').filter(s => s.trim()) : [],
+                    extraHour: `$${Number(pkg.precio_hora_adicional).toLocaleString()}`,
+                    notes: pkg.notes
+                }));
+
+                const mappedServices = servicesRes.data.map(s => {
+                    let Icon = Star;
+                    const cat = s.categoria;
+                    if (cat === 'Entretenimiento') Icon = Music;
+                    else if (cat === 'Decoración') Icon = Sparkles;
+                    else if (cat === 'Gastronomía') Icon = Utensils;
+                    else if (cat === 'Estructura') Icon = Layout;
+                    else if (cat === 'Fotografía') Icon = Camera;
+
+                    return {
+                        name: s.nombre,
+                        price: `$${Number(s.precio_unitario).toLocaleString()}${s.tipo_cobro === 'Por Persona' ? '/p' : ''}`,
+                        icon: Icon
+                    };
+                });
+
+                setCatalogData(mappedPacks);
+                setExtraServices(mappedServices);
+            } catch (err) {
+                console.error("Error loading luxury content:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchContent();
+    }, []);
 
     // Auto-slide effect for the gallery
     useEffect(() => {
@@ -213,7 +82,7 @@ const Paquetes = () => {
 
     const filteredPacks = filter === 'Todos'
         ? catalogData
-        : catalogData.filter(p => p.category.includes(filter) || p.title.includes(filter));
+        : catalogData.filter(p => (p.category || "").includes(filter) || (p.title || "").includes(filter));
 
     return (
         <PageTransition>
@@ -243,7 +112,7 @@ const Paquetes = () => {
                 {/* Filter section */}
                 <div className="sticky top-24 z-40 bg-white/90 backdrop-blur-md border-y border-primary-100 py-8 mb-24">
                     <div className="max-w-[1600px] mx-auto flex justify-center gap-16 px-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                        {['Todos', 'Básicos', 'Banquetes', 'Premium', 'Plata', 'Oro'].map((cat) => (
+                        {['Todos', 'Básicos', 'Banquetes'].map((cat) => (
                             <button
                                 key={cat}
                                 onClick={() => setFilter(cat)}
@@ -259,80 +128,89 @@ const Paquetes = () => {
                     </div>
                 </div>
 
-                {/* Main Catalog Grid */}
-                <section className="px-10 pb-40">
-                    <div className="max-w-[1600px] mx-auto">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-24 gap-x-16">
-                            {filteredPacks.map((pack, idx) => (
-                                <motion.div
-                                    key={pack.id}
-                                    initial={{ opacity: 0, y: 40 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 1, ease: [0.2, 1, 0.3, 1], delay: idx * 0.1 }}
-                                    viewport={{ once: true }}
-                                    className="group cursor-pointer flex flex-col"
-                                    onClick={() => setSelectedPack(pack)}
-                                >
-                                    <div className="relative aspect-[3/4] overflow-hidden bg-primary-50 mb-10 shadow-sm border border-primary-100">
-                                        <img
-                                            src={pack.img}
-                                            alt={pack.title}
-                                            className="w-full h-full object-cover transition-transform duration-[1500ms] ease-out group-hover:scale-105"
-                                        />
-                                        <div className="absolute top-8 left-8 bg-black text-white px-8 py-3 shadow-2xl">
-                                            <span className="text-[10px] uppercase tracking-[0.4em] font-bold">{pack.category}</span>
-                                        </div>
-                                        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                                    </div>
-                                    <div className="flex flex-col flex-1">
-                                        <div className="flex justify-between items-baseline mb-6">
-                                            <h3 className="text-3xl font-serif uppercase tracking-wider text-black group-hover:text-primary-700 transition-colors">
-                                                {pack.title}
-                                            </h3>
-                                            <span className="text-xl font-light text-primary-400">/{pack.id.toString().padStart(2, '0')}</span>
-                                        </div>
-                                        <p className="text-primary-500 font-light text-base leading-relaxed mb-10 line-clamp-2 max-w-sm italic">
-                                            {pack.desc}
-                                        </p>
-                                        <div className="mt-auto flex justify-between items-center pt-8 border-t border-primary-100">
-                                            <div className="flex gap-10 text-[10px] uppercase tracking-[0.3em] font-bold text-primary-400">
-                                                <span className="flex items-center gap-3"><Users size={14} className="text-black" /> {pack.capacity} P</span>
-                                                <span className="flex items-center gap-3"><Clock size={14} className="text-black" /> {pack.duration}H</span>
-                                            </div>
-                                            <span className="text-2xl font-medium text-black tracking-tight">${pack.price}</span>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-
-                        {/* Complementary Services - Magazine Layout */}
-                        <div className="mt-64">
-                            <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-10">
-                                <div className="max-w-xl">
-                                    <span className="text-primary-400 text-[10px] uppercase tracking-[0.5em] font-bold mb-6 block">Add-ons</span>
-                                    <h2 className="text-5xl md:text-7xl font-serif uppercase text-black leading-none">Servicios <span className="italic font-light">Adicionales</span></h2>
-                                </div>
-                                <p className="text-primary-500 font-light text-lg max-w-sm italic leading-relaxed">
-                                    Personaliza tu experiencia hasta el último detalle con nuestra selección de servicios a la carta.
-                                </p>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-primary-100">
-                                {extraServices.map((s, i) => (
-                                    <div key={i} className="p-12 border-b border-r border-primary-100 hover:bg-primary-50 transition-colors group">
-                                        <div className="flex items-start justify-between mb-10">
-                                            <div className="w-12 h-12 flex items-center justify-center bg-black text-white group-hover:scale-110 transition-transform duration-500">
-                                                <s.icon size={20} />
-                                            </div>
-                                            <span className="text-2xl font-medium text-black tracking-tight">{s.price}</span>
-                                        </div>
-                                        <h4 className="text-xs uppercase tracking-[0.4em] font-bold text-primary-900">{s.name}</h4>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-40">
+                        <div className="w-16 h-16 border-t-2 border-black rounded-full animate-spin mb-10"></div>
+                        <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-black/40">Cargando Colección...</span>
                     </div>
-                </section>
+                ) : (
+                    <>
+                        {/* Main Catalog Grid */}
+                        <section className="px-10 pb-40">
+                            <div className="max-w-[1600px] mx-auto">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-24 gap-x-16">
+                                    {filteredPacks.map((pack, idx) => (
+                                        <motion.div
+                                            key={pack.id}
+                                            initial={{ opacity: 0, y: 40 }}
+                                            whileInView={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 1, ease: [0.2, 1, 0.3, 1], delay: idx * 0.1 }}
+                                            viewport={{ once: true }}
+                                            className="group cursor-pointer flex flex-col"
+                                            onClick={() => setSelectedPack(pack)}
+                                        >
+                                            <div className="relative aspect-[3/4] overflow-hidden bg-primary-50 mb-10 shadow-sm border border-primary-100">
+                                                <img
+                                                    src={pack.img}
+                                                    alt={pack.title}
+                                                    className="w-full h-full object-cover transition-transform duration-[1500ms] ease-out group-hover:scale-105"
+                                                />
+                                                <div className="absolute top-8 left-8 bg-black text-white px-8 py-3 shadow-2xl">
+                                                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold">{pack.category}</span>
+                                                </div>
+                                                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                            </div>
+                                            <div className="flex flex-col flex-1">
+                                                <div className="flex justify-between items-baseline mb-6">
+                                                    <h3 className="text-3xl font-serif uppercase tracking-wider text-black group-hover:text-primary-700 transition-colors">
+                                                        {pack.title}
+                                                    </h3>
+                                                    <span className="text-xl font-light text-primary-400">/{pack.id.toString().padStart(2, '0')}</span>
+                                                </div>
+                                                <p className="text-primary-500 font-light text-base leading-relaxed mb-10 line-clamp-2 max-w-sm italic">
+                                                    {pack.desc}
+                                                </p>
+                                                <div className="mt-auto flex justify-between items-center pt-8 border-t border-primary-100">
+                                                    <div className="flex gap-10 text-[10px] uppercase tracking-[0.3em] font-bold text-primary-400">
+                                                        <span className="flex items-center gap-3"><Users size={14} className="text-black" /> {pack.capacity} P</span>
+                                                        <span className="flex items-center gap-3"><Clock size={14} className="text-black" /> {pack.duration}H</span>
+                                                    </div>
+                                                    <span className="text-2xl font-medium text-black tracking-tight">${pack.price}</span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+
+                                {/* Complementary Services - Magazine Layout */}
+                                <div className="mt-64">
+                                    <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-10">
+                                        <div className="max-w-xl">
+                                            <span className="text-primary-400 text-[10px] uppercase tracking-[0.5em] font-bold mb-6 block">Add-ons</span>
+                                            <h2 className="text-5xl md:text-7xl font-serif uppercase text-black leading-none">Servicios <span className="italic font-light">Adicionales</span></h2>
+                                        </div>
+                                        <p className="text-primary-500 font-light text-lg max-w-sm italic leading-relaxed">
+                                            Personaliza tu experiencia hasta el último detalle con nuestra selección de servicios a la carta.
+                                        </p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-primary-100">
+                                        {extraServices.map((s, i) => (
+                                            <div key={i} className="p-12 border-b border-r border-primary-100 hover:bg-primary-50 transition-colors group">
+                                                <div className="flex items-start justify-between mb-10">
+                                                    <div className="w-12 h-12 flex items-center justify-center bg-black text-white group-hover:scale-110 transition-transform duration-500">
+                                                        <s.icon size={20} />
+                                                    </div>
+                                                    <span className="text-2xl font-medium text-black tracking-tight">{s.price}</span>
+                                                </div>
+                                                <h4 className="text-xs uppercase tracking-[0.4em] font-bold text-primary-900">{s.name}</h4>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </>
+                )}
 
                 {/* Detailed Modal Carousel */}
                 <AnimatePresence>
@@ -441,6 +319,10 @@ const Paquetes = () => {
                                     </div>
 
                                     <div className="flex-1">
+                                        <p className="text-primary-600 text-lg font-light leading-relaxed mb-16 italic border-l-4 border-black pl-8">
+                                            {selectedPack.desc}
+                                        </p>
+                                        
                                         <h4 className="text-[11px] uppercase tracking-[0.4em] font-bold text-black mb-10">Servicios Incluidos</h4>
                                         <div className="grid grid-cols-1 gap-6 mb-20">
                                             {selectedPack.included.map((item, i) => (

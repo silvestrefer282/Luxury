@@ -9,20 +9,32 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        config.headers.Authorization = `Token ${token}`;
     }
     return config;
 });
 
+// Interceptor para manejar errores de respuesta (como el 401)
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+        }
+        return Promise.reject(error);
+    }
+);
+
 export const reservacionService = {
-    getAll: () => api.get('reservaciones/'),
+    getAll: (params = {}) => api.get('reservaciones/', { params }),
     getDisponibilidad: (fecha) => api.get(`reservaciones/disponibilidad/?fecha=${fecha}`),
     create: (data) => api.post('reservaciones/', data),
     cancelar: (id) => api.post(`reservaciones/${id}/cancelar/`),
 };
 
 export const paqueteService = {
-    getAll: () => api.get('paquetes/'),
+    getAll: (params = {}) => api.get('paquetes/', { params }),
     create: (data) => api.post('paquetes/', data),
     update: (id, data) => api.patch(`paquetes/${id}/`, data),
     delete: (id) => api.delete(`paquetes/${id}/`),
@@ -60,4 +72,52 @@ export const galeriaService = {
     delete: (id) => api.delete(`galeria/${id}/`),
 };
 
+export const contratoService = {
+    getAll: (params = {}) => api.get('contratos/', { params }),
+    create: (data) => api.post('contratos/', data),
+    update: (id, data) => api.patch(`contratos/${id}/`, data),
+    delete: (id) => api.delete(`contratos/${id}/`),
+};
+
+export const clienteService = {
+    getAll: () => api.get('clientes/'),
+};
+
+export const pagoContratoService = {
+    getAll: () => api.get('pagos-contrato/'),
+    create: (data) => api.post('pagos-contrato/', data),
+    update: (id, data) => api.patch(`pagos-contrato/${id}/`, data),
+    delete: (id) => api.delete(`pagos-contrato/${id}/`),
+};
+
+export const testimonioService = {
+    getAll: (params = {}) => api.get('testimonios/', { params }),
+    create: (data) => api.post('testimonios/', data),
+    update: (id, data) => api.patch(`testimonios/${id}/`, data),
+    delete: (id) => api.delete(`testimonios/${id}/`),
+};
+
+export const usuarioService = {
+    getAll: () => api.get('usuarios/'),
+    create: (data) => api.post('usuarios/', data),
+    update: (id, data) => api.patch(`usuarios/${id}/`, data),
+    delete: (id) => api.delete(`usuarios/${id}/`),
+};
+
 export default api;
+export const authService = {
+    login: (credentials) => api.post('usuarios/login/', {
+        username: credentials.email,
+        password: credentials.password
+    }),
+    registro: (userData) => api.post('usuarios/registro/', {
+        username: userData.email,
+        email: userData.email,
+        password: userData.password,
+        first_name: userData.nombre,
+        apellido_paterno: userData.apellido_paterno || '',
+        apellido_materno: userData.apellido_materno || '',
+        telefono: userData.telefono || '',
+        rol: 'Cliente'
+    }),
+};

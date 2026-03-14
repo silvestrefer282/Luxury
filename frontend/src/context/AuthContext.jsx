@@ -1,25 +1,35 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    // Por ahora simulamos un usuario logueado para poder probar las rutas
-    // Rol: 'Administrador', 'Encargado', 'Cliente'
-    const [user, setUser] = useState({
-        id: 1,
-        username: 'luxury_user',
-        rol: 'Administrador'
-    });
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const login = (role) => {
-        setUser({ id: 1, username: 'test', rol: role });
+    useEffect(() => {
+        // Cargar usuario desde localStorage al iniciar
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+            setUser(JSON.parse(savedUser));
+        }
+        setLoading(false);
+    }, []);
+
+    const login = (userData, token) => {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
     };
 
-    const logout = () => setUser(null);
+    const logout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+    };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
-            {children}
+        <AuthContext.Provider value={{ user, login, logout, loading }}>
+            {!loading && children}
         </AuthContext.Provider>
     );
 };

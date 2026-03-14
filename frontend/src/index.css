@@ -74,4 +74,32 @@
   .zoom-image-container:hover img {
     @apply scale-110;
   }
+
+  /* Luxury Scrollbar */
+  .luxury-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .luxury-scrollbar::-webkit-scrollbar-track {
+    @apply bg-primary-100;
+  }
+  .luxury-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary-500 rounded-full border-2 border-primary-100;
+  }
+  .luxury-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-800;
+  }
+
+  /* Dark Variant for Sidebar */
+  .luxury-scrollbar-dark::-webkit-scrollbar {
+    width: 4px;
+  }
+  .luxury-scrollbar-dark::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .luxury-scrollbar-dark::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+  .luxury-scrollbar-dark::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
+  }
 }

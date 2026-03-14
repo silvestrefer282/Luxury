@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { useAuth } from '../context/AuthContext';
 import { paqueteService, reservacionService, servicioService } from '../services/api';
-import { Calendar, Users, Info, Star, Shield, ArrowRight } from 'lucide-react';
+import { Calendar, Users, Info, Star, Shield, ArrowRight, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Reservar = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [paquetes, setPaquetes] = useState([]);
     const [servicios, setServicios] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -46,20 +48,26 @@ const Reservar = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!user || !user.cliente_id) {
+            alert("Debes iniciar sesión como cliente para reservar.");
+            return;
+        }
+
         setLoading(true);
         try {
             // Adaptar datos para el backend
             const payload = {
                 ...formData,
-                cliente: 1, // Simulado
+                cliente: user.cliente_id,
                 observaciones: `Evento: ${formData.tipo_evento}. Festejado: ${formData.nombre_festejado}. Notas: ${formData.notas}`
             };
             await reservacionService.create(payload);
             alert("¡Reservación realizada con éxito!");
-            navigate('/dashboard');
+            navigate('/');
         } catch (error) {
             console.error(error);
-            alert("Error al procesar la reserva. Verifica disponibilidad.");
+            alert(error.response?.data?.error || "Error al procesar la reserva. Verifica disponibilidad.");
         } finally {
             setLoading(false);
         }
@@ -138,7 +146,7 @@ const Reservar = () => {
                             </div>
                             <div>
                                 <label>Número de invitados *</label>
-                                <input type="number" name="num_personas" value={formData.num_personas} onChange={handleChange} placeholder="Ej: 100" required />
+                                <input type="number" name="num_personas" min="0" value={formData.num_personas} onChange={handleChange} placeholder="Ej: 100" required />
                             </div>
                             <div>
                                 <label>Nombre del Festejado *</label>

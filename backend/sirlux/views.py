@@ -1,4 +1,6 @@
-from rest_framework import viewsets, status, decorators, serializers
+from rest_framework import viewsets, status, decorators, serializers, permissions
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from django.utils import timezone
 from datetime import datetime
@@ -6,20 +8,33 @@ from decimal import Decimal
 
 from .models import (
     Usuario, Cliente, Paquete, ImagenPaquete, Menu, CategoriaMenu, Platillo, ServicioAdicional, 
-    Reservacion, Degustacion, ConfiguracionSistema, Galeria
+    Reservacion, Degustacion, ConfiguracionSistema, Galeria, Contrato, PagoContrato,
+    Testimonio
 )
 from .serializers import (
     UsuarioSerializer, ClienteSerializer, PaqueteSerializer, 
     MenuSerializer, CategoriaMenuSerializer, PlatilloSerializer, 
     ServicioAdicionalSerializer, 
     ReservacionSerializer, DegustacionSerializer, 
-    ConfiguracionSistemaSerializer, GaleriaSerializer
+    ConfiguracionSistemaSerializer, GaleriaSerializer, ContratoSerializer, PagoContratoSerializer,
+    TestimonioSerializer
 )
 from .services import calcular_costo_reservacion, verificar_disponibilidad
 
 class ReservacionViewSet(viewsets.ModelViewSet):
     queryset = Reservacion.objects.all()
     serializer_class = ReservacionSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Reservacion.objects.none()
+        if user.rol == Usuario.ADMINISTRADOR or user.is_staff or user.rol == Usuario.ENCARGADO:
+            # Si se pide específicamente "solo las mías" o si no es una petición del dashboard admin
+            if self.request.query_params.get('personal') == 'true':
+                return Reservacion.objects.filter(cliente__usuario=user)
+            return Reservacion.objects.all()
+        return Reservacion.objects.filter(cliente__usuario=user)
 
     def perform_create(self, serializer):
         # Lógica de creación con cálculo automático
@@ -150,3 +165,80 @@ class DegustacionViewSet(viewsets.ModelViewSet):
 class GaleriaViewSet(viewsets.ModelViewSet):
     queryset = Galeria.objects.all()
     serializer_class = GaleriaSerializer
+
+class ContratoViewSet(viewsets.ModelViewSet):
+    queryset = Contrato.objects.all()
+    serializer_class = ContratoSerializer
+
+class PagoContratoViewSet(viewsets.ModelViewSet):
+    queryset = PagoContrato.objects.all()
+    serializer_class = PagoContratoSerializer
+class UsuarioViewSet(viewsets.ModelViewSet):
+    queryset = Usuario.objects.all()
+    serializer_class = UsuarioSerializer
+
+    @decorators.action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    def registro(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            # Todos los roles ahora pueden tener un perfil de cliente para hacer sus propias reservas
+            Cliente.objects.get_or_create(usuario=user)
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key, "user": UsuarioSerializer(user).data}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @decorators.action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    def login(self, request):
+        username_or_email = request.data.get('username')
+        password = request.data.get('password')
+        
+        username = username_or_email
+        if username_or_email and '@' in username_or_email:
+            user_obj = Usuario.objects.filter(email=username_or_email).first()
+            if user_obj:
+                username = user_obj.username
+                
+        user = authenticate(username=username, password=password)
+        if user:
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key, "user": UsuarioSerializer(user).data})
+        return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
+
+class TestimonioViewSet(viewsets.ModelViewSet):
+    queryset = Testimonio.objects.all()
+    serializer_class = TestimonioSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.query_params.get('approved_only', '').lower() == 'true':
+            return queryset.filter(aprobado=True)
+        return queryset
+
+    def update(self, request, *args, **kwargs):
+        print("UPDATE CALLED ON TESTIMONIO WITH METHOD:", request.method)
+        print("DATA RECEIVED:", request.data)
+        response = super().update(request, *args, **kwargs)
+        print("UPDATE RESPONSE:", response.data)
+        return response
+
+    def partial_update(self, request, *args, **kwargs):
+        print("PARTIAL UPDATE CALLED ON TESTIMONIO WITH METHOD:", request.method)
+        print("DATA:", request.data)
+        return super().partial_update(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            print("TESTIMONIO VALIDATION ERROR:", serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def perform_create(self, serializer):
+        # Al crear un testimonio, verificamos que la reserva esté finalizada
+        reserva = serializer.validated_data['reservacion']
+        if reserva.estado != 'Finalizada':
+            raise serializers.ValidationError("Solo se pueden dejar testimonios de eventos finalizados.")
+        serializer.save()

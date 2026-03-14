@@ -12,9 +12,9 @@ class Usuario(AbstractUser):
         (CLIENTE, 'Cliente'),
     ]
 
-    nombre = models.CharField(max_length=100, verbose_name="Nombre")
-    correo = models.EmailField(unique=True, verbose_name="Correo Electrónico")
-    apellido_paterno = models.CharField(max_length=100, verbose_name="Apellido Paterno")
+    # Eliminamos 'nombre' y 'correo' personalizados para usar 'first_name' y 'email' de AbstractUser
+    # Pero mantenemos los apellidos y el resto de la info que no está en el base
+    apellido_paterno = models.CharField(max_length=100, verbose_name="Apellido Paterno", blank=True, null=True)
     apellido_materno = models.CharField(max_length=100, verbose_name="Apellido Materno", blank=True, null=True)
     telefono = models.CharField(max_length=15, verbose_name="Teléfono", blank=True, null=True)
     rol = models.CharField(max_length=20, choices=ROLES_CHOICES, default=CLIENTE)
