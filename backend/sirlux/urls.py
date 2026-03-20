@@ -5,7 +5,7 @@ from .views import (
     CategoriaMenuViewSet, PlatilloViewSet,
     ServicioAdicionalViewSet, ClienteViewSet, UsuarioViewSet,
     DegustacionViewSet, GaleriaViewSet, ContratoViewSet, PagoContratoViewSet,
-    TestimonioViewSet
+    TestimonioViewSet, ConfiguracionSistemaViewSet
 )
 
 router = DefaultRouter()
@@ -22,6 +22,7 @@ router.register(r'contratos', ContratoViewSet)
 router.register(r'pagos-contrato', PagoContratoViewSet)
 router.register(r'usuarios', UsuarioViewSet)
 router.register(r'testimonios', TestimonioViewSet)
+router.register(r'configuracion', ConfiguracionSistemaViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

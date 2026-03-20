@@ -1,0 +1,50 @@
+On branch master
+Your branch is ahead of 'origin/master' by 1 commit.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   backend/config/__pycache__/wsgi.cpython-313.pyc
+	modified:   backend/sirlux/__pycache__/services.cpython-313.pyc
+	modified:   backend/sirlux/migrations/__pycache__/0001_initial.cpython-313.pyc
+	modified:   backend/sirlux/migrations/__pycache__/0002_categoriamenu_servicioadicional_categoria_platillo.cpython-313.pyc
+	modified:   backend/sirlux/migrations/__pycache__/0003_paquete_notas_paquete_precio_hora_adicional_and_more.cpython-313.pyc
+	modified:   backend/sirlux/migrations/__pycache__/0004_alter_paquete_imagen.cpython-313.pyc
+	modified:   backend/sirlux/migrations/__pycache__/0005_imagenpaquete.cpython-313.pyc
+	modified:   backend/sirlux/migrations/__pycache__/0006_platillo_imagen_servicioadicional_imagen_and_more.cpython-313.pyc
+	modified:   backend/sirlux/migrations/__pycache__/0007_galeria_alter_platillo_imagen_and_more.cpython-313.pyc
+	modified:   backend/sirlux/migrations/__pycache__/0013_alter_categoriamenu_id_alter_cliente_id_and_more.cpython-313.pyc
+	modified:   backend/sirlux/migrations/__pycache__/__init__.cpython-313.pyc
+	modified:   backend/sirlux/serializers.py
+	modified:   backend/sirlux/views.py
+	deleted:    conflicts.txt
+	modified:   frontend/src/pages/Disponibilidad.jsx
+	modified:   frontend/src/pages/admin/hooks/useAdminDashboard.js
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	backend/check.log
+	backend/config/__pycache__/settings.cpython-313.pyc
+	backend/error_log.txt
+	backend/sirlux/__pycache__/admin.cpython-313.pyc
+	backend/sirlux/__pycache__/serializers.cpython-313.pyc
+	backend/sirlux/__pycache__/urls.cpython-313.pyc
+	backend/sirlux/__pycache__/views.cpython-313.pyc
+	backend/sirlux/migrations/__pycache__/0008_contrato.cpython-313.pyc
+	backend/sirlux/migrations/__pycache__/0009_pagocontrato.cpython-313.pyc
+	backend/sirlux/migrations/__pycache__/0010_alter_usuario_apellido_paterno.cpython-313.pyc
+	backend/sirlux/migrations/__pycache__/0011_remove_usuario_correo_remove_usuario_nombre.cpython-313.pyc
+	backend/sirlux/migrations/__pycache__/0012_testimonio.cpython-313.pyc
+	backend/sirlux/models/__pycache__/__init__.cpython-313.pyc
+	backend/sirlux/models/__pycache__/contratos.cpython-313.pyc
+	backend/sirlux/models/__pycache__/testimonios.cpython-313.pyc
+	backend/sirlux/models/__pycache__/usuarios.cpython-313.pyc
+	backend/test_reserva20mar.py
+	backend/test_reservas_multiples.py
+	git_log.txt
+	git_reflog.txt
+	git_status.txt
+	silvestre_commits.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")

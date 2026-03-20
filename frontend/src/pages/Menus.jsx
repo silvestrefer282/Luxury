@@ -70,7 +70,7 @@ const Menus = () => {
                             className={`text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-300 relative group ${activeCategory === cat ? 'text-black' : 'text-black/30 hover:text-black'
                                 }`}
                         >
-                            {menuData[cat].title.split(' ')[0]}
+                            {menuData[cat].title.replace('Platos Fuertes - ', '')}
                             {activeCategory === cat && (
                                 <motion.div layoutId="menuTab" className="absolute -bottom-4 left-0 right-0 h-px bg-black" />
                             )}
@@ -118,9 +118,9 @@ const Menus = () => {
                                     <h3 className="text-[11px] uppercase tracking-[0.5em] font-black text-black/20 mb-10">{menuData[activeCategory].subtitle}</h3>
                                 )}
 
-                                <div className="space-y-12">
+                                <div className="space-y-12 pr-4 max-h-[500px] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-black/10 hover:[&::-webkit-scrollbar-thumb]:bg-black/30">
                                     {activeCategory && menuData[activeCategory]?.items.map((item, i) => (
-                                        <div key={i} className="group cursor-default border-b border-black/5 pb-10 hover:border-black transition-all duration-500">
+                                        <div key={i} className="group cursor-default border-b border-black/5 pb-10 hover:border-black transition-all duration-500 mr-2">
                                             <div className="flex items-start gap-8">
                                                 <span className="text-xl font-serif text-black/20 group-hover:text-black transition-colors">{i < 9 ? `0${i + 1}` : i + 1}</span>
                                                 <div className="space-y-4">

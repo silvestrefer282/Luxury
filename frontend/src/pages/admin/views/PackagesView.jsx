@@ -7,7 +7,10 @@ const PackagesView = ({
     normalizeText,
     setEditingPackage,
     setPackageForm,
-    handleDeletePackage
+    handleDeletePackage,
+    setCoverPreview,
+    setGalleryPreviews,
+    setDeletedGalleryIds
 }) => (
     <div className="space-y-16 animate-in fade-in slide-in-from-right-5 duration-700">
         <div className="h-px bg-luxury-black/10 w-full mb-16"></div>
@@ -28,14 +31,18 @@ const PackagesView = ({
                         <div className="relative z-10">
                             <span className="text-[10px] uppercase tracking-[0.5em] text-luxury-gray-mid font-bold block mb-4">Registro: #00{pkg.id}</span>
                             <h3 className="text-3xl font-serif uppercase tracking-tighter mb-8 text-luxury-black group-hover:translate-x-2 transition-transform duration-500">{pkg.name}</h3>
-                            <div className="flex gap-12">
-                                <div>
-                                    <p className="text-[9px] uppercase tracking-[0.4em] text-luxury-gray-mid font-bold mb-2">Inversión Base</p>
-                                    <p className="text-2xl font-serif font-light text-luxury-black">${Number(pkg.price).toLocaleString()}</p>
+                            <div className="space-y-6 py-8 border-y border-luxury-black/5 mt-8 mb-4">
+                                <div className="flex items-baseline justify-between">
+                                    <p className="text-[10px] uppercase tracking-[0.4em] text-luxury-gray-mid font-black">Inversión Base</p>
+                                    <p className="text-2xl font-serif text-luxury-black">${Number(pkg.price).toLocaleString()}</p>
                                 </div>
-                                <div className="border-l border-luxury-black/10 pl-12">
-                                    <p className="text-[9px] uppercase tracking-[0.4em] text-luxury-gray-mid font-bold mb-2">Aforo Máximo</p>
-                                    <p className="text-2xl font-serif font-light text-luxury-black">{pkg.capacity} <span className="text-xs uppercase tracking-widest text-luxury-gray-mid">Pax</span></p>
+                                <div className="flex items-baseline justify-between border-t border-dotted border-luxury-black/10 pt-4">
+                                    <p className="text-[10px] uppercase tracking-[0.4em] text-luxury-gray-mid font-black">Aforo Máximo</p>
+                                    <p className="text-2xl font-serif text-luxury-black">{pkg.capacity} <span className="text-xs">Pax</span></p>
+                                </div>
+                                <div className="flex items-baseline justify-between border-t border-dotted border-luxury-black/10 pt-4">
+                                    <p className="text-[10px] uppercase tracking-[0.4em] text-luxury-gray-mid font-black">Tiempos</p>
+                                    <p className="text-2xl font-serif text-luxury-black">{pkg.numero_tiempos} <span className="text-xs">T</span></p>
                                 </div>
                             </div>
                             
@@ -68,8 +75,13 @@ const PackagesView = ({
                                             extraHourPrice: pkg.extraHourPrice,
                                             includedServices: pkg.includedServices,
                                             notes: pkg.notes,
-                                            description: pkg.description
+                                            description: pkg.description,
+                                            numero_tiempos: pkg.numero_tiempos,
+                                            incluye_menu: pkg.incluye_menu
                                         });
+                                        if (setCoverPreview) setCoverPreview(pkg.image);
+                                        if (setGalleryPreviews) setGalleryPreviews(pkg.gallery || []);
+                                        if (setDeletedGalleryIds) setDeletedGalleryIds([]);
                                     }}
                                     className="p-3 bg-luxury-black text-white hover:bg-luxury-gray-dark transition-colors"
                                 >

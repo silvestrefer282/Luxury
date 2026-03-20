@@ -1,0 +1,6 @@
+52b1486 HEAD@{0}: commit: Fix database credentials in settings.py after merge
+0541c99 HEAD@{1}: commit (merge): Merge remote-tracking branch 'silvestre/main' into master
+dfb58f0 HEAD@{2}: commit (amend): 3
+f33d39a HEAD@{3}: commit: Fix UI bugs: Optimistic UI testimonios, added min=0 to numbers, fixed modals overflow
+2eb3be5 HEAD@{4}: commit: 2
+0d37c80 HEAD@{5}: commit (initial): 1

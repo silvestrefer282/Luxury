@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, Image as ImageIcon } from 'lucide-react';
+import { X, Trash2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PackageModal = ({ 
     isOpen, 
@@ -14,6 +14,8 @@ const PackageModal = ({
     setCoverFile, 
     galleryPreviews, 
     setGalleryPreviews,
+    deletedGalleryIds,
+    setDeletedGalleryIds,
     handleCreatePackage,
     handleUpdatePackage
 }) => {
@@ -37,7 +39,7 @@ const PackageModal = ({
                         {isAdding ? 'Archivo Maestro: Nuevo Registro' : 'Archivo Maestro: Modificación'}
                     </span>
                     <h2 className="text-5xl font-serif uppercase tracking-tight mb-16">
-                        {isAdding ? 'Definir' : 'Ajustar'} <span className="italic font-light">{isAdding ? 'Nuevo Paquete' : editingPackage.name}</span>
+                        {isAdding ? 'Definir Paquete' : 'Ajustar Paquete'} <span className="italic font-light">{isAdding ? 'Nuevo' : editingPackage?.name}</span>
                     </h2>
 
                     <form onSubmit={isAdding ? handleCreatePackage : handleUpdatePackage} className="space-y-12">
@@ -108,6 +110,38 @@ const PackageModal = ({
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-2 gap-10 border-y border-luxury-black/5 py-8">
+                             <div className="space-y-4">
+                                <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Número de Tiempos</label>
+                                <input 
+                                    name="numero_tiempos" 
+                                    type="number" 
+                                    min="0" max="10"
+                                    required
+                                    value={packageForm.numero_tiempos} 
+                                    onChange={handlePackageFormChange}
+                                    className="w-full border-b border-black/10 py-4 px-2 focus:border-black outline-none text-xl font-serif text-luxury-black transition-all" 
+                                />
+                            </div>
+                            <div className="flex items-center gap-6 mt-6">
+                                <label className="flex items-center gap-4 cursor-pointer group">
+                                    <input 
+                                        type="checkbox"
+                                        name="incluye_menu"
+                                        checked={packageForm.incluye_menu}
+                                        onChange={(e) => handlePackageFormChange({
+                                            target: {
+                                                name: 'incluye_menu',
+                                                value: e.target.checked
+                                            }
+                                        })}
+                                        className="w-6 h-6 border-luxury-black cursor-pointer accent-luxury-black"
+                                    />
+                                    <span className="text-[10px] uppercase tracking-widest font-bold text-black/60 group-hover:text-black transition-colors">¿Incluye Menú Completo?</span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div className="space-y-4">
                             <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Imagen de Portada (Catálogo)</label>
                             <div className="flex items-center gap-8 p-10 border border-dashed border-luxury-black/10 rounded-xl bg-black/[0.01]">
@@ -143,16 +177,53 @@ const PackageModal = ({
                             <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Galería de Evidencia (Carousel)</label>
                             <div className="grid grid-cols-4 md:grid-cols-6 gap-4 mb-4">
                                 {galleryPreviews.map((p, idx) => (
-                                    <div key={`new-${idx}`} className="aspect-square bg-black/5 border border-black/20 overflow-hidden relative group">
+                                    <div key={p.id ? `old-${p.id}` : `new-${idx}`} className="aspect-square bg-black/5 border border-black/20 overflow-hidden relative group">
                                         <img src={p.url} alt={`New Gallery ${idx}`} className="w-full h-full object-cover" />
-                                        <button 
-                                            type="button"
-                                            onClick={() => setGalleryPreviews(galleryPreviews.filter((_, i) => i !== idx))}
-                                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <Trash2 size={16} className="text-white" />
-                                        </button>
-                                        <div className="absolute top-1 right-1 bg-black text-white text-[7px] uppercase p-1 font-bold shadow-xl">Nuevo</div>
+                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-2">
+                                            {idx > 0 && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newPreviews = [...galleryPreviews];
+                                                        [newPreviews[idx - 1], newPreviews[idx]] = [newPreviews[idx], newPreviews[idx - 1]];
+                                                        setGalleryPreviews(newPreviews);
+                                                    }}
+                                                    className="p-1 text-white hover:text-gray-300"
+                                                >
+                                                    <ChevronLeft size={16} />
+                                                </button>
+                                            )}
+                                            
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    if (p.id) {
+                                                        setDeletedGalleryIds([...(deletedGalleryIds || []), p.id]);
+                                                    }
+                                                    setGalleryPreviews(galleryPreviews.filter((_, i) => i !== idx));
+                                                }}
+                                                className="p-1 text-red-400 hover:text-red-500"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+
+                                            {idx < galleryPreviews.length - 1 && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newPreviews = [...galleryPreviews];
+                                                        [newPreviews[idx], newPreviews[idx + 1]] = [newPreviews[idx + 1], newPreviews[idx]];
+                                                        setGalleryPreviews(newPreviews);
+                                                    }}
+                                                    className="p-1 text-white hover:text-gray-300"
+                                                >
+                                                    <ChevronRight size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+                                        {!p.id && (
+                                            <div className="absolute top-1 right-1 bg-black text-white text-[7px] uppercase p-1 font-bold shadow-xl">Nuevo</div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

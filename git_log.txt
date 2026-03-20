@@ -1,0 +1,7 @@
+52b1486 Fix database credentials in settings.py after merge
+0541c99 Merge remote-tracking branch 'silvestre/main' into master
+7ff91ca primer commit
+dfb58f0 3
+f33d39a Fix UI bugs: Optimistic UI testimonios, added min=0 to numbers, fixed modals overflow
+2eb3be5 2
+0d37c80 1

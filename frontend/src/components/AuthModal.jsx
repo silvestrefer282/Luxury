@@ -20,12 +20,14 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [formErrors, setFormErrors] = useState({});
 
     // Sincronizar el modo cuando el modal se abre
     useEffect(() => {
         if (isOpen) {
             setMode(initialMode);
             setError(null);
+            setFormErrors({});
             // Hacer scroll al principio en móviles
             const container = document.getElementById('auth-modal-container');
             if (container) container.scrollTop = 0;
@@ -35,10 +37,23 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         setError(null);
+        setFormErrors({ ...formErrors, [e.target.name]: null });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        const newErrors = {};
+        if (mode === 'register' && !formData.nombre.trim()) newErrors.nombre = 'Requerido';
+        if (!formData.email.trim()) newErrors.email = 'Requerido';
+        if (!formData.password) newErrors.password = 'Requerido';
+        if (mode === 'register' && !formData.confirmPassword) newErrors.confirmPassword = 'Requerido';
+        
+        if (Object.keys(newErrors).length > 0) {
+            setFormErrors(newErrors);
+            return;
+        }
+
         setLoading(true);
         setError(null);
 
@@ -76,12 +91,16 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     const renderError = () => {
         if (!error) return null;
 
+        // Si el backend devuelve { "error": "mensaje..." }
+        if (error.error) return <span>{String(error.error)}</span>;
+
         if (typeof error === 'object') {
             return (
-                <ul className="list-none space-y-1">
+                <ul className="list-none space-y-3">
                     {Object.entries(error).map(([field, messages]) => (
-                        <li key={field}>
-                            <span className="opacity-60">{field}:</span> <span>{Array.isArray(messages) ? messages[0] : String(messages)}</span>
+                        <li key={field} className="flex flex-col gap-1">
+                            <span className="opacity-40 text-[8px] tracking-[0.5em] italic uppercase">{field}</span> 
+                            <span>{Array.isArray(messages) ? messages[0] : String(messages)}</span>
                         </li>
                     ))}
                 </ul>
@@ -172,15 +191,23 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
                             {error && (
                                 <motion.div 
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-[10px] uppercase tracking-widest font-bold"
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mb-10 border border-luxury-black/10 bg-white p-6 md:p-8 flex flex-col gap-3 rounded-2xl shadow-sm"
                                 >
-                                    {renderError()}
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-red-700 rotate-45" />
+                                        <span className="text-[9px] uppercase tracking-[0.5em] font-bold text-luxury-gray-mid italic block">
+                                            Aviso de Acceso
+                                        </span>
+                                    </div>
+                                    <div className="text-[10px] uppercase tracking-widest font-black text-luxury-black/80 pl-4 border-l border-luxury-black/10">
+                                        {renderError()}
+                                    </div>
                                 </motion.div>
                             )}
 
-                            <form onSubmit={handleSubmit} className={mode === 'register' ? "space-y-8" : "space-y-12"}>
+                            <form onSubmit={handleSubmit} noValidate className={mode === 'register' ? "space-y-8" : "space-y-12"}>
                                 {mode === 'register' && (
                                     <div className="space-y-3">
                                         <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">Nombre Completo</label>
@@ -193,9 +220,13 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                                 onChange={handleChange}
                                                 placeholder="Tu nombre"
                                                 className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
-                                                required={mode === 'register'}
                                             />
                                         </div>
+                                        {formErrors.nombre && (
+                                            <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
+                                                * {formErrors.nombre}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
 
@@ -212,9 +243,13 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                             onChange={handleChange}
                                             placeholder={mode === 'login' ? "Usuario o correo" : "email@example.com"}
                                             className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
-                                            required
                                         />
                                     </div>
+                                    {formErrors.email && (
+                                        <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
+                                            * {formErrors.email}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="space-y-3">
@@ -233,7 +268,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                             name="password"
                                             value={formData.password}
                                             onChange={handleChange}
-                                            placeholder="••••••••"
+                                            placeholder="Luxury24"
+                                            maxLength="8"
                                             className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
                                             required
                                         />
@@ -245,6 +281,11 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
+                                    {formErrors.password && (
+                                        <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
+                                            * {formErrors.password}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {mode === 'register' && (
@@ -257,9 +298,9 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                                 name="confirmPassword"
                                                 value={formData.confirmPassword}
                                                 onChange={handleChange}
-                                                placeholder="••••••••"
+                                                placeholder="Luxury24"
+                                                maxLength="8"
                                                 className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
-                                                required={mode === 'register'}
                                             />
                                             <button
                                                 type="button"
@@ -269,6 +310,11 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                                 {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                             </button>
                                         </div>
+                                        {formErrors.confirmPassword && (
+                                            <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
+                                                * {formErrors.confirmPassword}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
 
@@ -281,7 +327,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                         <Loader2 className="animate-spin" size={20} />
                                     ) : (
                                         <div className="flex items-center gap-4">
-                                            <span>{mode === 'login' ? 'Entrar al Panel' : 'Registrarse'}</span>
+                                            <span>{mode === 'login' ? 'Iniciar Sesión' : 'Registrarse'}</span>
                                             <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
                                         </div>
                                     )}

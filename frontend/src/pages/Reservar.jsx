@@ -3,32 +3,62 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
-import { paqueteService, reservacionService, servicioService } from '../services/api';
-import { Calendar, Users, Info, Star, Shield, ArrowRight, Clock } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { paqueteService, reservacionService, servicioService, menuService, configuracionService } from '../services/api';
+import { Calendar, Users, Info, Star, Shield, ArrowRight, Clock, MapPin, Phone, Utensils, AlertCircle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Reservar = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [paquetes, setPaquetes] = useState([]);
     const [servicios, setServicios] = useState([]);
+    const [categorias, setCategorias] = useState([]);
+    const [platillos, setPlatillos] = useState([]);
+    const [config, setConfig] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
+
+    const notify = (msg) => {
+        setErrorMsg(msg);
+        setTimeout(() => setErrorMsg(''), 4000);
+    };
 
     const [formData, setFormData] = useState({
         paquete: '',
         tipo_evento: '',
         fecha_evento: '',
         num_personas: '',
-        nombre_festejado: '',
+        hora_inicio: '14:00',
+        hora_fin: '19:00',
+        horas_adicionales: 0,
         servicios_adicionales: [],
-        notas: '',
-        hora_inicio: '18:00', // Campo interno requerido por el backend
-        hora_fin: '22:00'     // Campo interno requerido por el backend
+        platillos_seleccionados: [],
+        nombre_festejado: '',
+        domicilio_contacto: '',
+        telefono_contacto: '',
+        notas: ''
     });
 
     useEffect(() => {
-        paqueteService.getAll().then(res => setPaquetes(res.data));
-        servicioService.getAll().then(res => setServicios(res.data));
+        const fetchAll = async () => {
+            try {
+                const [pkgs, svcs, cats, plates, cfg] = await Promise.all([
+                    paqueteService.getAll(),
+                    servicioService.getAll(),
+                    menuService.getCategorias(),
+                    menuService.getPlatillos(),
+                    configuracionService.getCurrent()
+                ]);
+                setPaquetes(pkgs.data);
+                setServicios(svcs.data);
+                setCategorias(cats.data);
+                setPlatillos(plates.data);
+                setConfig(cfg.data);
+            } catch (err) {
+                console.error("Error loading reservation data:", err);
+            }
+        };
+        fetchAll();
     }, []);
 
     const handleChange = (e) => {
@@ -46,179 +76,543 @@ const Reservar = () => {
         });
     };
 
+    const handlePlatilloToggle = (id) => {
+        const pkg = paquetes.find(p => p.id === formData.paquete);
+        const limit = pkg ? pkg.numero_tiempos : 1;
+        const clickedPlatillo = platillos.find(p => p.id === id);
+
+        setFormData(prev => {
+            let current = [...prev.platillos_seleccionados];
+            
+            // Si ya está seleccionado, lo quitamos
+            if (current.includes(id)) {
+                return { ...prev, platillos_seleccionados: current.filter(pId => pId !== id) };
+            }
+
+            // REGLA: Solo uno por categoría. Buscamos si hay otro de la misma categoría
+            const existingInCategory = current.find(pId => {
+                const p = platillos.find(item => item.id === pId);
+                return p && p.categoria === clickedPlatillo.categoria;
+            });
+
+            if (existingInCategory) {
+                // Intercambiamos (SWAP)
+                current = current.filter(pId => pId !== existingInCategory);
+                current.push(id);
+                return { ...prev, platillos_seleccionados: current };
+            }
+
+            // Si llegamos aquí es un platillo nuevo en una categoría nueva
+            if (current.length >= limit) {
+                notify(`Límite alcanzado: Este paquete solo permite elegir ${limit} tiempos.`);
+                return prev;
+            }
+
+            return { ...prev, platillos_seleccionados: [...current, id] };
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        if (!user || !user.cliente_id) {
-            alert("Debes iniciar sesión como cliente para reservar.");
+        if (!user || (!user.cliente_id && user.rol !== 'Administrador')) {
+            notify("Debes iniciar sesión para reservar.");
             return;
+        }
+
+        if (!formData.paquete) {
+            notify("Por favor selecciona un paquete.");
+            return;
+        }
+
+        // --- VALIDACIÓN DE HORARIOS DEL SALÓN ---
+        if (config) {
+            const start = formData.hora_inicio;
+            const pkg = paquetes.find(p => p.id === formData.paquete);
+            const totalDuration = (pkg?.duracion_horas || 0) + (formData.horas_adicionales || 0);
+            
+            const [sh, sm] = start.split(':').map(Number);
+            const startTotal = sh * 60 + sm;
+            
+            const [ah, am] = config.hora_apertura.split(':').map(Number);
+            const apertureTotal = ah * 60 + am;
+            
+            const [ch, cm] = config.hora_cierre.split(':').map(Number);
+            const closureTotal = ch * 60 + cm;
+            
+            const endTotal = startTotal + (totalDuration * 60);
+
+            if (startTotal < apertureTotal) {
+                notify(`El salón abre a las ${format12h(config.hora_apertura)}. Por favor ajusta la hora de inicio.`);
+                return;
+            }
+            if (endTotal > closureTotal) {
+                notify(`El evento terminaría a las ${endTimeFormatted}, pero el salón cierra a las ${format12h(config.hora_cierre)}. Por favor reduce las horas o ajusta el inicio.`);
+                return;
+            }
         }
 
         setLoading(true);
         try {
-            // Adaptar datos para el backend
+            // Asegurar que el ID del cliente existe
+            const clienteId = user.cliente_id;
+            
+            if (!clienteId) {
+                notify("Error: No se encontró un perfil de cliente asociado a tu cuenta. Intenta cerrar sesión y volver a entrar.");
+                setLoading(false);
+                return;
+            }
+
             const payload = {
                 ...formData,
-                cliente: user.cliente_id,
+                num_personas: Number(formData.num_personas),
+                cliente: clienteId,
                 observaciones: `Evento: ${formData.tipo_evento}. Festejado: ${formData.nombre_festejado}. Notas: ${formData.notas}`
             };
             await reservacionService.create(payload);
-            alert("¡Reservación realizada con éxito!");
-            navigate('/');
+            notify("¡Reservación realizada con éxito!");
+            setTimeout(() => navigate('/'), 2000);
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.error || "Error al procesar la reserva. Verifica disponibilidad.");
+            notify(error.response?.data?.error || "Error al procesar la reserva. Verifica disponibilidad.");
         } finally {
             setLoading(false);
         }
     };
 
+    const selectedPkg = paquetes.find(p => p.id === formData.paquete);
+    const selectedServices = servicios.filter(s => formData.servicios_adicionales.includes(s.id));
+    
+    const extraHoursCost = (formData.horas_adicionales || 0) * (Number(selectedPkg?.precio_hora_adicional) || 0);
+    const totalPrice = (Number(selectedPkg?.precio_base) || 0) + extraHoursCost + selectedServices.reduce((sum, s) => sum + Number(s.precio_unitario || 0), 0);
+
+    const format12h = (time24) => {
+        if (!time24) return '--:--';
+        const [h, m] = time24.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+    };
+
+    const calculateEndTime = () => {
+        if (!formData.hora_inicio || !selectedPkg) return '--:--';
+        const [h, m] = formData.hora_inicio.split(':').map(Number);
+        const totalDuration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
+        const endH = (h + totalDuration) % 24;
+        const ampm = endH >= 12 ? 'PM' : 'AM';
+        const h12 = endH % 12 || 12;
+        return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+    };
+
+    const startTimeFormatted = format12h(formData.hora_inicio);
+    const endTimeFormatted = calculateEndTime();
+
+    const getAvailableHours = () => {
+        if (!config || !selectedPkg) return [];
+        const hours = [];
+        const [ah, am] = config.hora_apertura.split(':').map(Number);
+        const [ch, cm] = config.hora_cierre.split(':').map(Number);
+        const apertureMin = ah * 60 + am;
+        const closureMin = ch * 60 + cm;
+        const totalDuration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
+
+        for (let t = apertureMin; t <= closureMin - (totalDuration * 60); t += 30) {
+            const h = Math.floor(t / 60);
+            const m = t % 60;
+            const time24 = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+            hours.push({
+                value: time24,
+                label: format12h(time24)
+            });
+        }
+        return hours;
+    };
+
+    const availableHours = getAvailableHours();
+
     return (
-        <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
+        <div style={{ background: '#f8fafc', minHeight: '100vh', scrollBehavior: 'smooth' }}>
             <Navbar />
 
             <div className="container" style={{ padding: '8rem 0 6rem' }}>
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="card-luxury"
-                    style={{ maxWidth: '1000px', margin: '0 auto', background: '#fff', padding: '4rem' }}
-                >
-                    <h1 style={{ marginBottom: '3rem', fontSize: '2.5rem' }}>Reservar ahora</h1>
+                <div className="flex flex-col lg:flex-row gap-12 relative items-start">
+                    
+                    {/* LEFT: FORM STEPS */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex-1 space-y-20"
+                    >
+                        <div className="pb-12 border-b border-gray-100 text-center">
+                             <h1 style={{ fontSize: '3.5rem', lineHeight: 1.1 }} className="font-serif italic mb-4">Configura Tu Experiencia</h1>
+                             <p className="text-[12px] uppercase tracking-[0.5em] text-gray-400 font-black">Luxury Reservation Portal</p>
+                        </div>
 
-                    <form onSubmit={handleSubmit}>
-                        {/* 1. Selecciona Paquete */}
-                        <div style={{ marginBottom: '4rem' }}>
-                            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                <Star color="var(--accent)" /> Selecciona un Paquete *
-                            </h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-                                {paquetes.map(p => (
-                                    <div
-                                        key={p.id}
-                                        onClick={() => setFormData({ ...formData, paquete: p.id })}
-                                        style={{
-                                            position: 'relative',
-                                            padding: '2rem',
-                                            borderRadius: '12px',
-                                            border: formData.paquete === p.id ? '2px solid var(--accent)' : '1px solid var(--border)',
-                                            background: formData.paquete === p.id ? '#fff9f0' : '#fff',
-                                            cursor: 'pointer',
-                                            transition: 'var(--transition)'
-                                        }}
+                        <form onSubmit={handleSubmit} className="space-y-32">
+                            {/* 1. Selecciona Paquete */}
+                            <section id="step1" className="space-y-16">
+                                <div className="flex flex-col items-center text-center gap-4">
+                                    <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">01</span>
+                                    <h3 className="font-serif text-4xl uppercase tracking-tight">Selección de la Experiencia</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                    {paquetes.map(p => {
+                                        const isSelected = formData.paquete === p.id;
+                                        return (
+                                            <motion.div
+                                                key={p.id}
+                                                whileHover={{ y: -5 }}
+                                                onClick={() => setFormData({ 
+                                                    ...formData, 
+                                                    paquete: p.id, 
+                                                    platillos_seleccionados: [],
+                                                    num_personas: p.capacidad_personas 
+                                                })}
+                                                className={`relative p-12 cursor-pointer transition-all duration-500 rounded-[40px] border-2 flex flex-col items-center text-center ${isSelected ? 'border-black bg-white shadow-2xl scale-[1.02]' : 'border-gray-100 bg-white hover:border-black/20'}`}
+                                            >
+                                                <h4 className="font-serif text-3xl uppercase tracking-tighter mb-2">{p.nombre}</h4>
+                                                <div className="flex items-baseline gap-1 mb-10">
+                                                    <span className="text-4xl font-light tracking-tighter">${Number(p.precio_base).toLocaleString()}</span>
+                                                </div>
+
+                                                <div className="space-y-4 text-[11px] uppercase tracking-widest text-gray-400 font-bold flex flex-col items-center">
+                                                    <div className="flex items-center gap-3"><Clock size={14} className="text-black" /> {p.duracion_horas} Horas</div>
+                                                    <div className="flex items-center gap-3"><Users size={14} className="text-black" /> {p.capacidad_personas} Pax</div>
+                                                    {p.incluye_menu && <div className="text-black underline underline-offset-4 flex items-center gap-2"><Utensils size={14} /> {p.numero_tiempos} Tiempos</div>}
+                                                </div>
+
+                                                {/* Hora adicional info */}
+                                                <div className="mt-12 pt-8 border-t border-gray-50 w-full flex justify-between items-center text-[10px] uppercase tracking-widest font-black text-gray-300">
+                                                    <span>Hora Adicional</span>
+                                                    <span className="text-black">${Number(p.precio_hora_adicional).toLocaleString()}</span>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Selector de Horas Adicionales */}
+                                {selectedPkg && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mt-12 bg-white p-10 rounded-[40px] border border-gray-100 flex flex-col items-center justify-center text-center gap-8 shadow-sm"
                                     >
-                                        <div style={{
-                                            position: 'absolute', top: '1rem', right: '1rem',
-                                            width: '20px', height: '20px', borderRadius: '50%',
-                                            border: '2px solid var(--accent)',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                        }}>
-                                            {formData.paquete === p.id && <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)' }} />}
+                                        <div className="space-y-1">
+                                            <h4 className="font-serif text-2xl italic">¿Deseas extender la celebración?</h4>
+                                            <p className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300">Añade horas extras al paquete seleccionado</p>
                                         </div>
-                                        <h4 style={{ fontSize: '1.2rem', color: formData.paquete === p.id ? 'var(--accent)' : 'inherit' }}>{p.nombre}</h4>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: '700', margin: '0.5rem 0' }}>${p.precio_base}</div>
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{p.descripcion}</p>
-                                        <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Clock size={12} /> {p.duracion_horas}h</span>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Users size={12} /> {p.capacidad_personas}p</span>
+                                        <div className="flex items-center gap-8 bg-gray-50 p-4 rounded-full px-8 border border-gray-100">
+                                            <button 
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, horas_adicionales: Math.max(0, prev.horas_adicionales - 1) }))}
+                                                className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all shadow-sm"
+                                            >-</button>
+                                            <div className="text-center min-w-[50px]">
+                                                <span className="text-2xl font-serif">{formData.horas_adicionales}</span>
+                                                <p className="text-[8px] uppercase tracking-widest font-black text-gray-400">Horas</p>
+                                            </div>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, horas_adicionales: prev.horas_adicionales + 1 }))}
+                                                className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all shadow-sm"
+                                            >+</button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </section>
+
+                             {/* 2. Datos generales y Contacto */}
+                             <section id="step2" className="space-y-16">
+                                 <div className="flex flex-col items-center text-center gap-4">
+                                     <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">02</span>
+                                     <h3 className="font-serif text-4xl uppercase tracking-tight">Logística del Evento</h3>
+                                 </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 bg-white p-12 rounded-[40px] shadow-sm border border-gray-50">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Categoría de Evento</label>
+                                        <select name="tipo_evento" value={formData.tipo_evento} onChange={handleChange} required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black transition-colors">
+                                            <option value="">Selecciona...</option>
+                                            <option value="Boda">Boda Real</option>
+                                            <option value="XV Años">XV Años Gala</option>
+                                            <option value="Bautizo">Bautizo</option>
+                                            <option value="Graduación">Graduación</option>
+                                            <option value="Corporativo">Corporativo</option>
+                                            <option value="Social">Social</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Calendario</label>
+                                        <input type="date" name="fecha_evento" value={formData.fecha_evento} onChange={handleChange} required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Hora de Inicio</label>
+                                        <select 
+                                            name="hora_inicio" 
+                                            value={formData.hora_inicio} 
+                                            onChange={handleChange} 
+                                            required 
+                                            className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Selecciona...</option>
+                                            {availableHours.map(h => (
+                                                <option key={h.value} value={h.value}>{h.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2 group">
+                                        <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Hora de Finalización</label>
+                                        <div className="w-full border-b border-gray-100 py-3 font-serif text-lg text-gray-600 flex items-center justify-between">
+                                            {endTimeFormatted}
+                                            <Clock size={16} className="text-gray-200" />
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* 2. Datos generales */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
-                            <div>
-                                <label>Tipo de evento *</label>
-                                <select name="tipo_evento" value={formData.tipo_evento} onChange={handleChange} required>
-                                    <option value="">Selecciona un tipo</option>
-                                    <option value="Boda">Boda</option>
-                                    <option value="XV Años">XV Años</option>
-                                    <option value="Bautizo">Bautizo</option>
-                                    <option value="Corporativo">Corporativo</option>
-                                    <option value="Social">Social</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Fecha del Evento *</label>
-                                <input type="date" name="fecha_evento" value={formData.fecha_evento} onChange={handleChange} required />
-                            </div>
-                            <div>
-                                <label>Número de invitados *</label>
-                                <input type="number" name="num_personas" min="0" value={formData.num_personas} onChange={handleChange} placeholder="Ej: 100" required />
-                            </div>
-                            <div>
-                                <label>Nombre del Festejado *</label>
-                                <input type="text" name="nombre_festejado" value={formData.nombre_festejado} onChange={handleChange} placeholder="Nombre de quien celebra" required />
-                            </div>
-                        </div>
-
-                        {/* 3. Servicios Adicionales */}
-                        <div style={{ marginBottom: '4rem' }}>
-                            <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Servicios Adicionales (Opcional)</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-                                {servicios.map(s => (
-                                    <div
-                                        key={s.id}
-                                        onClick={() => handleServiceToggle(s.id)}
-                                        style={{
-                                            padding: '1.2rem',
-                                            borderRadius: '8px',
-                                            border: '1px solid var(--border)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '1rem',
-                                            cursor: 'pointer',
-                                            background: formData.servicios_adicionales.includes(s.id) ? '#f8fafc' : '#fff',
-                                            transition: 'var(--transition)'
-                                        }}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.servicios_adicionales.includes(s.id)}
-                                            onChange={() => { }} // Handle on parent div
-                                            style={{ width: '18px', cursor: 'pointer' }}
-                                        />
-                                        <span style={{ fontSize: '0.95rem' }}>{s.nombre}</span>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Nombre del Festejado</label>
+                                        <input type="text" name="nombre_festejado" value={formData.nombre_festejado} onChange={handleChange} placeholder="Ej: Alejandra García" required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" />
                                     </div>
-                                ))}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Invitados (Fijo por Paquete)</label>
+                                        <input type="number" name="num_personas" value={formData.num_personas} readOnly className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg text-gray-400 cursor-not-allowed outline-none focus:border-gray-200" />
+                                    </div>
+                                    <div className="space-y-2 lg:col-span-2">
+                                        <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Dirección de Contacto (Contrato)</label>
+                                        <input type="text" name="domicilio_contacto" value={formData.domicilio_contacto} onChange={handleChange} placeholder="Dirección completa..." required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" />
+                                    </div>
+                                    <div className="space-y-2 lg:col-span-2">
+                                        <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Línea Telefónica</label>
+                                        <input type="tel" name="telefono_contacto" value={formData.telefono_contacto} onChange={handleChange} placeholder="10 dígitos" required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" />
+                                    </div>
+                                </div>
+                            </section>
+
+                             {/* 3. Selección de Menú */}
+                            {selectedPkg && selectedPkg.incluye_menu && (
+                                <section id="step3" className="space-y-16">
+                                    <div className="flex flex-col items-center text-center gap-4">
+                                        <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">03</span>
+                                        <h3 className="font-serif text-4xl uppercase tracking-tight">Curaduría Gourmet</h3>
+                                    </div>
+                                    <div className="space-y-16">
+                                        {categorias.map(cat => (
+                                            <div key={cat.id}>
+                                                <h4 className="flex items-center gap-6 mb-10">
+                                                    <div className="h-[1px] bg-gray-100 flex-1"></div>
+                                                    <span className="text-[10px] uppercase tracking-[0.5em] font-black text-gray-400">{cat.nombre}</span>
+                                                    <div className="h-[1px] bg-gray-100 flex-1"></div>
+                                                </h4>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                    {platillos.filter(p => p.categoria === cat.id).map(p => {
+                                                        const isSelected = formData.platillos_seleccionados.includes(p.id);
+                                                        return (
+                                                            <div 
+                                                                key={p.id} 
+                                                                onClick={() => handlePlatilloToggle(p.id)}
+                                                                className={`cursor-pointer transition-all p-4 rounded-2xl border-2 flex items-center gap-4 ${isSelected ? 'border-black bg-white shadow-xl px-6 scale-[1.02]' : 'border-white bg-white hover:border-gray-100'}`}
+                                                            >
+                                                                <div className={`w-14 h-14 rounded-full overflow-hidden border ${isSelected ? 'border-black' : 'border-gray-50'}`}>
+                                                                    {p.imagen && <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover" />}
+                                                                </div>
+                                                                <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-black' : 'text-gray-500'}`}>{p.nombre}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+
+                             {/* 4. Complementos */}
+                            <section id="step4" className="space-y-16">
+                                <div className="flex flex-col items-center text-center gap-4">
+                                    <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">04</span>
+                                    <h3 className="font-serif text-4xl uppercase tracking-tight">Complementos Luxury</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {servicios.map(s => {
+                                        const isSelected = formData.servicios_adicionales.includes(s.id);
+                                        return (
+                                            <div
+                                                key={s.id}
+                                                onClick={() => handleServiceToggle(s.id)}
+                                                className={`p-6 rounded-3xl border-2 transition-all cursor-pointer flex justify-between items-center ${isSelected ? 'border-black bg-white shadow-xl' : 'border-white bg-white hover:border-black/5'}`}
+                                            >
+                                                <div className="space-y-1">
+                                                    <span className="uppercase tracking-[0.2em] font-black text-[9px] block">{s.nombre}</span>
+                                                    <span className="text-gray-400 text-xs">${Number(s.precio_unitario).toLocaleString()}</span>
+                                                </div>
+                                                <Shield size={16} className={isSelected ? 'text-black' : 'text-gray-100'} />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+
+                             {/* 5. Notas */}
+                            <section id="step5" className="space-y-16">
+                                <div className="flex flex-col items-center text-center gap-4">
+                                    <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">05</span>
+                                    <h3 className="font-serif text-4xl uppercase tracking-tight">Notas de Producción</h3>
+                                </div>
+                                <textarea
+                                    name="notas"
+                                    value={formData.notas}
+                                    onChange={handleChange}
+                                    rows="6"
+                                    placeholder="Comparte detalles específicos para elevar tu evento..."
+                                    className="w-full border-2 border-gray-50 rounded-[30px] p-8 outline-none focus:border-black transition-all bg-gray-50/30"
+                                ></textarea>
+                            </section>
+
+                            {/* 6. Submit */}
+                            <div className="pt-20">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="bg-black text-white w-full py-10 text-[12px] uppercase tracking-[0.8em] font-black hover:bg-gray-900 transition-all rounded-full shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)]"
+                                >
+                                    {loading ? 'Formalizando...' : 'Finalizar Proceso de Reserva'}
+                                </button>
                             </div>
-                        </div>
+                        </form>
+                    </motion.div>
 
-                        {/* 4. Notas */}
-                        <div style={{ marginBottom: '3rem' }}>
-                            <label>Notas adicionales</label>
-                            <textarea
-                                name="notas"
-                                value={formData.notas}
-                                onChange={handleChange}
-                                rows="4"
-                                placeholder="Cuéntanos más sobre tu evento, preferencias especiales, etc. (máximo 500 caracteres)"
-                                maxLength="500"
-                            ></textarea>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{formData.notas.length}/500 caracteres</span>
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-luxury"
-                            style={{
-                                width: '100%',
-                                padding: '1.2rem',
-                                fontSize: '1.1rem',
-                                justifyContent: 'center',
-                                background: loading ? '#94a3b8' : 'var(--accent)'
-                            }}
+                    {/* RIGHT: STICKY SUMMARY PANEL */}
+                    <div className="lg:w-[380px] sticky top-[10rem] hidden lg:block">
+                        <motion.div 
+                            initial={{ opacity: 0, x: 30 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="bg-[#1a1a1a] text-white p-10 rounded-[40px] shadow-2xl space-y-10"
                         >
-                            {loading ? 'Procesando...' : 'Confirmar reserva'}
-                        </button>
-                    </form>
-                </motion.div>
+                            <div className="border-b border-white/10 pb-8">
+                                <h4 className="text-[10px] uppercase tracking-[0.5em] font-black text-white/40 mb-2">Resumen de Selección</h4>
+                                <div className="text-3xl font-serif italic mb-2">Tu Evento</div>
+                                <div className="text-[10px] uppercase tracking-widest text-white/60">
+                                    {formData.fecha_evento || 'Sin fecha'} • {startTimeFormatted} - {endTimeFormatted}
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* Paquete */}
+                                {selectedPkg ? (
+                                    <div className="flex justify-between items-start gap-4">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Paquete</p>
+                                            <p className="text-sm font-bold tracking-tighter uppercase">{selectedPkg.nombre}</p>
+                                        </div>
+                                        <span className="text-sm font-light tracking-tighter text-white/60">${Number(selectedPkg.precio_base).toLocaleString()}</span>
+                                    </div>
+                                ) : (
+                                    <p className="text-[10px] uppercase tracking-widest text-white/20 italic">No se ha seleccionado paquete...</p>
+                                )}
+
+                                {/* Horas Adicionales Resumen */}
+                                {formData.horas_adicionales > 0 && selectedPkg && (
+                                    <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Tiempo Extra</p>
+                                            <p className="text-[11px] font-bold uppercase">{formData.horas_adicionales} {formData.horas_adicionales === 1 ? 'Hora' : 'Horas'}</p>
+                                        </div>
+                                        <span className="text-[11px] text-white/60">+ ${extraHoursCost.toLocaleString()}</span>
+                                    </div>
+                                )}
+
+                                {/* Comida seleccionada */}
+                                {formData.platillos_seleccionados.length > 0 && (
+                                    <div className="space-y-4 pt-4 border-t border-white/5">
+                                        <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Menú Seleccionado</p>
+                                        <div className="space-y-2">
+                                            {formData.platillos_seleccionados.map(pId => {
+                                                const p = platillos.find(item => item.id === pId);
+                                                return p ? (
+                                                    <div key={pId} className="flex items-center gap-3">
+                                                        <div className="w-1 h-1 bg-white/20 rounded-full"></div>
+                                                        <span className="text-[10px] uppercase tracking-wider text-white/80">{p.nombre}</span>
+                                                    </div>
+                                                ) : null;
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Adicionales */}
+                                {selectedServices.length > 0 && (
+                                    <div className="space-y-4 pt-4 border-t border-white/5">
+                                        <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Adicionales Luxury</p>
+                                        <div className="space-y-3">
+                                            {selectedServices.map(s => (
+                                                <div key={s.id} className="flex justify-between items-center">
+                                                    <span className="text-[10px] uppercase tracking-wider text-white/80">{s.nombre}</span>
+                                                    <span className="text-[10px] text-white/40">${Number(s.precio_unitario).toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="pt-8 border-t-2 border-white/10">
+                                <div className="flex justify-between items-baseline mb-2">
+                                    <span className="text-[10px] uppercase tracking-[0.3em] font-black text-white/40 leading-none">Inversión Total</span>
+                                    <span className="text-4xl font-serif italic text-white leading-none">${totalPrice.toLocaleString()}</span>
+                                </div>
+                                <p className="text-[8px] uppercase tracking-widest text-white/20">Sujeto a cambios según disponibilidad de fecha y extras.</p>
+                            </div>
+
+                            <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
+                                <div className="flex items-center gap-4 text-white/60">
+                                    <Shield size={16} />
+                                    <p className="text-[9px] uppercase tracking-widest leading-loose">Protegido por el acuerdo de exclusividad SIR LUXURY</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
             </div>
 
             <Footer />
+
+            {/* Premium Toast System */}
+            <AnimatePresence>
+                {errorMsg && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 100, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+                        style={{
+                            position: 'fixed',
+                            bottom: '2rem',
+                            left: '50%',
+                            x: '-50%',
+                            zIndex: 9999,
+                            minWidth: '320px',
+                            background: '#000',
+                            color: '#fff',
+                            padding: '1.5rem 2rem',
+                            borderRadius: '100px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '1rem',
+                            boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
+                            backdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                    >
+                        <div className="bg-white/10 p-2 rounded-full">
+                            <AlertCircle size={18} className="text-white" />
+                        </div>
+                        <p className="text-[11px] uppercase tracking-[0.3em] font-black">{errorMsg}</p>
+                        <button 
+                            onClick={() => setErrorMsg('')}
+                            className="ml-auto hover:rotate-90 transition-transform p-1"
+                        >
+                            <X size={14} />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

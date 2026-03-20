@@ -30,6 +30,7 @@ const Paquetes = () => {
                     price: Number(pkg.precio_base).toLocaleString('es-MX', { minimumFractionDigits: 2 }),
                     capacity: pkg.capacidad_personas,
                     duration: pkg.duracion_horas,
+                    numeroTiempos: pkg.numero_tiempos,
                     img: pkg.imagen || 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=1000',
                     gallery: pkg.galeria?.length > 0 
                         ? pkg.galeria.map(imgObj => imgObj.imagen) 
@@ -174,6 +175,7 @@ const Paquetes = () => {
                                                     <div className="flex gap-10 text-[10px] uppercase tracking-[0.3em] font-bold text-primary-400">
                                                         <span className="flex items-center gap-3"><Users size={14} className="text-black" /> {pack.capacity} P</span>
                                                         <span className="flex items-center gap-3"><Clock size={14} className="text-black" /> {pack.duration}H</span>
+                                                        <span className="flex items-center gap-3"><Utensils size={14} className="text-black" /> {pack.numeroTiempos}T</span>
                                                     </div>
                                                     <span className="text-2xl font-medium text-black tracking-tight">${pack.price}</span>
                                                 </div>
@@ -303,7 +305,7 @@ const Paquetes = () => {
                                         </button>
                                     </div>
 
-                                    <div className="flex gap-12 mb-16 pb-12 border-b border-primary-100">
+                                    <div className="flex flex-wrap gap-12 mb-16 pb-12 border-b border-primary-100">
                                         <div className="flex flex-col gap-2">
                                             <span className="text-[10px] uppercase tracking-widest text-primary-400 font-bold">Capacidad</span>
                                             <span className="text-2xl font-medium text-black">{selectedPack.capacity} P</span>
@@ -315,6 +317,14 @@ const Paquetes = () => {
                                         <div className="flex flex-col gap-2">
                                             <span className="text-[10px] uppercase tracking-widest text-primary-400 font-bold">Inversión</span>
                                             <span className="text-2xl font-medium text-black">${selectedPack.price}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <span className="text-[10px] uppercase tracking-widest text-primary-400 font-bold">Tiempos</span>
+                                            <span className="text-2xl font-medium text-black">{selectedPack.numeroTiempos} T</span>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <span className="text-[10px] uppercase tracking-widest text-primary-400 font-bold">Hora Extra</span>
+                                            <span className="text-2xl font-medium text-black">{selectedPack.extraHour}</span>
                                         </div>
                                     </div>
 

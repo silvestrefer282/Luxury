@@ -5,11 +5,47 @@ const UsersView = ({
     usersList, 
     handleUpdateUserRole, 
     handleToggleUserStatus, 
-    handleDeleteUser 
-}) => (
+    handleDeleteUser,
+    searchTerm,
+    normalizeText,
+    userRoleFilter,
+    setUserRoleFilter
+}) => {
+    const roles = ['Todos', 'Administrador', 'Encargado', 'Cliente'];
+
+    const filteredUsers = usersList.filter(u => {
+        const matchesSearch = !searchTerm || (
+            normalizeText(u.first_name).includes(normalizeText(searchTerm)) || 
+            normalizeText(u.apellido_paterno).includes(normalizeText(searchTerm)) || 
+            normalizeText(u.email).includes(normalizeText(searchTerm)) || 
+            normalizeText(u.username).includes(normalizeText(searchTerm)) ||
+            normalizeText(u.rol).includes(normalizeText(searchTerm))
+        );
+        const matchesRole = userRoleFilter === 'Todos' || u.rol === userRoleFilter;
+        return matchesSearch && matchesRole;
+    });
+
+    return (
     <div className="animate-in fade-in slide-in-from-right-5 duration-700">
+        <div className="flex justify-end items-center mb-10 border-b border-luxury-black pb-8">
+            <div className="flex gap-4">
+                {roles.map(role => (
+                    <button
+                        key={role}
+                        onClick={() => setUserRoleFilter(role)}
+                        className={`text-[10px] uppercase tracking-[0.3em] font-bold px-8 py-3 border rounded-full transition-all duration-300 ${
+                            userRoleFilter === role 
+                                ? 'bg-luxury-black text-white border-luxury-black shadow-sm' 
+                                : 'border-black/10 hover:border-black text-luxury-black/60 hover:text-luxury-black shadow-sm'
+                        }`}
+                    >
+                        {role}
+                    </button>
+                ))}
+            </div>
+        </div>
         <div className="grid gap-8">
-            {usersList.map((usr) => (
+            {filteredUsers.map((usr) => (
                 <div key={usr.id} className="bg-white border border-luxury-black/5 p-12 hover:shadow-2xl transition-all rounded-3xl group flex flex-col md:flex-row gap-12 items-center">
                     <div className="flex-1">
                         <div className="flex items-center gap-4 mb-6">
@@ -58,6 +94,7 @@ const UsersView = ({
             ))}
         </div>
     </div>
-);
+    );
+};
 
 export default UsersView;

@@ -7,11 +7,20 @@ class Contrato(models.Model):
     fecha_emision = models.DateField(auto_now_add=True)
     
     # Datos del Proveedor (Salón)
+    # Datos del Proveedor (Salón)
     representante_salon = models.CharField(max_length=200, default="Graciela Herrera Ramírez")
+    
+    # Datos del Consumidor (Cliente)
+    domicilio_consumidor = models.TextField(blank=True, null=True, verbose_name="Domicilio del Consumidor")
+    telefono_consumidor = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
     
     # Datos del Evento (Extraídos o ajustados para el contrato)
     lugar_evento = models.CharField(max_length=255, default="2 de Abril 2503 Col. El Carmen, Apizaco, Tlax.")
+    tipo_evento = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tipo de Evento")
     cantidad_personas = models.PositiveIntegerField(default=0)
+    
+    hora_inicio = models.TimeField(null=True, blank=True)
+    hora_fin = models.TimeField(null=True, blank=True)
     duracion_horas = models.PositiveIntegerField(default=5)
     
     # Desglose Financiero

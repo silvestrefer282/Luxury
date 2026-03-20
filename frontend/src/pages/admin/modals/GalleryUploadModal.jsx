@@ -19,8 +19,8 @@ const GalleryUploadModal = ({
                     initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
                     className="bg-white max-w-2xl w-full p-20 relative shadow-2xl"
                 >
-                    <button onClick={onClose} className="absolute top-10 right-10 opacity-40 hover:opacity-100 transition-opacity">
-                        <X size={30} />
+                    <button type="button" onClick={onClose} className="absolute top-6 right-6 text-black/50 hover:text-black hover:bg-black/5 p-3 rounded-full transition-all">
+                        <X size={24} />
                     </button>
 
                     <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-black/40 block mb-6 px-1 border-l-2 border-luxury-black">Expediente Visual</span>
@@ -47,8 +47,11 @@ const GalleryUploadModal = ({
                                 <input type="file" name="imagen" required className="text-[10px] uppercase tracking-widest font-bold" />
                             </div>
                         </div>
-                        <div className="pt-8">
-                            <button type="submit" className="w-full bg-luxury-black text-white py-6 text-[11px] uppercase tracking-[0.4em] font-bold hover:bg-luxury-gray-dark shadow-2xl transition-all">
+                        <div className="pt-8 flex gap-4">
+                            <button type="button" onClick={onClose} className="w-1/3 border border-luxury-black/20 text-luxury-black py-6 text-[11px] uppercase tracking-[0.4em] font-bold hover:bg-black/5 transition-all">
+                                Cancelar
+                            </button>
+                            <button type="submit" className="w-2/3 bg-luxury-black text-white py-6 text-[11px] uppercase tracking-[0.4em] font-bold hover:bg-luxury-gray-dark shadow-2xl transition-all">
                                 Procesar Carga
                             </button>
                         </div>

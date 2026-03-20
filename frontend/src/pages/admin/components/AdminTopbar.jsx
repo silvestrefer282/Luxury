@@ -6,7 +6,8 @@ const AdminTopbar = ({
     searchTerm, 
     setSearchTerm, 
     userRole, 
-    onAddClick 
+    onAddClick,
+    onSettingsClick 
 }) => {
     const getTabTitle = () => {
         const item = {
@@ -24,7 +25,20 @@ const AdminTopbar = ({
         return item || 'Panel';
     };
 
-    const showSearch = ['reservations', 'packages', 'adicionales', 'menus', 'gallery'].includes(activeTab);
+    const showSearch = ['reservations', 'packages', 'adicionales', 'menus', 'gallery', 'contracts', 'users'].includes(activeTab);
+
+    const getSearchPlaceholder = () => {
+        const placeholders = {
+            'reservations': 'Buscar reserva...',
+            'packages': 'Buscar paquete...',
+            'adicionales': 'Buscar servicio...',
+            'menus': 'Buscar menú...',
+            'gallery': 'Buscar foto...',
+            'contracts': 'Buscar contrato...',
+            'users': 'Buscar usuario...'
+        };
+        return placeholders[activeTab] || 'Buscar en el archivo...';
+    };
 
     return (
         <div className="flex justify-between items-center mb-16 relative">
@@ -39,7 +53,7 @@ const AdminTopbar = ({
                         <input 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Buscar en el archivo..." 
+                            placeholder={getSearchPlaceholder()} 
                             className="bg-luxury-white/50 border-b-2 border-luxury-black/5 py-5 pl-16 pr-8 text-[11px] uppercase tracking-widest font-bold focus:border-luxury-black transition-all outline-none w-96 placeholder:text-luxury-gray-light" 
                         />
                     </div>
@@ -64,7 +78,10 @@ const AdminTopbar = ({
                     </button>
                 )}
 
-                <button className="p-5 bg-white border border-luxury-black/10 text-luxury-black hover:bg-luxury-black hover:text-white transition-all duration-500 shadow-xl rounded-2xl">
+                <button 
+                    onClick={onSettingsClick}
+                    className="p-5 bg-white border border-luxury-black/10 text-luxury-black hover:bg-luxury-black hover:text-white transition-all duration-500 shadow-xl rounded-2xl"
+                >
                     <Settings size={20} />
                 </button>
             </div>

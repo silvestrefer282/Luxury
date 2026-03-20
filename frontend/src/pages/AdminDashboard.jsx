@@ -19,6 +19,7 @@ import GalleryView from './admin/views/GalleryView';
 import ContractsView from './admin/views/ContractsView';
 import TestimoniosView from './admin/views/TestimoniosView';
 import UsersView from './admin/views/UsersView';
+import ConfiguracionView from './admin/views/ConfiguracionView';
 
 // Modals
 import PackageModal from './admin/modals/PackageModal';
@@ -28,6 +29,7 @@ import ReservationModal from './admin/modals/ReservationModal';
 import ContractModal from './admin/modals/ContractModal';
 import PaymentModal from './admin/modals/PaymentModal';
 import GalleryUploadModal from './admin/modals/GalleryUploadModal';
+import GalleryEditModal from './admin/modals/GalleryEditModal';
 import UserModal from './admin/modals/UserModal';
 
 const AdminDashboard = () => {
@@ -36,7 +38,7 @@ const AdminDashboard = () => {
 
     const renderActiveView = () => {
         switch (dashboard.activeTab) {
-            case 'dashboard': return <DashboardView reservas={dashboard.reservas} />;
+            case 'dashboard': return <DashboardView reservas={dashboard.reservas} clients={dashboard.clients} />;
             case 'reservations': return (
                 <ReservationsView 
                     {...dashboard} 
@@ -47,10 +49,17 @@ const AdminDashboard = () => {
             case 'adicionales': return <AdicionalesView {...dashboard} />;
             case 'menus': return <MenusView {...dashboard} />;
             case 'gallery': return <GalleryView {...dashboard} />;
-            case 'contracts': return <ContractsView {...dashboard} />;
+            case 'contracts': return <ContractsView {...dashboard} contractFilter={dashboard.contractFilter} setContractFilter={dashboard.setContractFilter} />;
             case 'testimonios': return <TestimoniosView {...dashboard} />;
-            case 'users': return <UsersView {...dashboard} />;
-            default: return <DashboardView reservas={dashboard.reservas} />;
+            case 'users': return <UsersView {...dashboard} userRoleFilter={dashboard.userRoleFilter} setUserRoleFilter={dashboard.setUserRoleFilter} />;
+            case 'settings': return (
+                <ConfiguracionView 
+                    configForm={dashboard.configForm}
+                    handleConfigChange={dashboard.handleConfigChange}
+                    handleUpdateConfig={dashboard.handleUpdateConfig}
+                />
+            );
+            default: return <DashboardView reservas={dashboard.reservas} clients={dashboard.clients} />;
         }
     };
 
@@ -84,7 +93,19 @@ const AdminDashboard = () => {
                             dashboard.resetUserForm();
                             dashboard.setIsAddingUser(true);
                         }
+                        if (dashboard.activeTab === 'menus') {
+                            dashboard.triggerPrompt(
+                                "Nueva Categoría",
+                                "Ingrese el nombre de la nueva categoría (Ej. Postres):",
+                                (newCategory) => {
+                                    if (newCategory?.trim()) {
+                                        dashboard.handleCreateCategory(newCategory.trim());
+                                    }
+                                }
+                            );
+                        }
                     }}
+                    onSettingsClick={() => dashboard.setActiveTab('settings')}
                 />
 
                 <div className="mt-10">
@@ -108,6 +129,8 @@ const AdminDashboard = () => {
                 setCoverFile={dashboard.setCoverFile}
                 galleryPreviews={dashboard.galleryPreviews}
                 setGalleryPreviews={dashboard.setGalleryPreviews}
+                deletedGalleryIds={dashboard.deletedGalleryIds}
+                setDeletedGalleryIds={dashboard.setDeletedGalleryIds}
                 handleCreatePackage={dashboard.handleCreatePackage}
                 handleUpdatePackage={dashboard.handleUpdatePackage}
             />
@@ -132,6 +155,13 @@ const AdminDashboard = () => {
                 handleCreateGallery={dashboard.handleCreateGallery}
             />
 
+            <GalleryEditModal
+                isOpen={!!dashboard.editingGallery}
+                onClose={() => dashboard.setEditingGallery(null)}
+                editingGallery={dashboard.editingGallery}
+                handleUpdateGallery={dashboard.handleUpdateGallery}
+            />
+
             {dashboard.editingMenuCategory && (
                 <MenuCategoryModal 
                     isOpen={!!dashboard.editingMenuCategory}
@@ -149,6 +179,9 @@ const AdminDashboard = () => {
                 onClose={() => dashboard.setIsAddingReservation(false)}
                 clients={dashboard.clients}
                 packages={dashboard.packages}
+                menus={dashboard.menus}
+                adicionales={dashboard.adicionales}
+                config={dashboard.configForm}
                 reservationForm={dashboard.reservationForm}
                 setReservationForm={dashboard.setReservationForm}
                 handleCreateReservation={dashboard.handleCreateReservation}
@@ -182,8 +215,8 @@ const AdminDashboard = () => {
 
             <ConfirmDialog 
                 {...dashboard.confirmState} 
-                onConfirm={() => {
-                    if (dashboard.confirmState.onConfirm) dashboard.confirmState.onConfirm();
+                onConfirm={(val) => {
+                    if (dashboard.confirmState.onConfirm) dashboard.confirmState.onConfirm(val);
                     dashboard.setConfirmState({ ...dashboard.confirmState, isOpen: false });
                 }}
                 onCancel={() => dashboard.setConfirmState({ ...dashboard.confirmState, isOpen: false })}

@@ -9,7 +9,8 @@ import {
     clienteService,
     pagoContratoService,
     testimonioService,
-    usuarioService
+    usuarioService,
+    configuracionService
 } from '../../../services/api';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -32,6 +33,8 @@ export const useAdminDashboard = () => {
     const [reservaFilter, setReservaFilter] = useState('Todas');
     const [galleryFilter, setGalleryFilter] = useState('Todas');
     const [adicionalFilter, setAdicionalFilter] = useState('Todos');
+    const [userRoleFilter, setUserRoleFilter] = useState('Todos');
+    const [contractFilter, setContractFilter] = useState('Todos');
 
     // Modals visibility
     const [isAddingPackage, setIsAddingPackage] = useState(false);
@@ -44,22 +47,40 @@ export const useAdminDashboard = () => {
     const [selectedReservationForContract, setSelectedReservationForContract] = useState(null);
     const [selectedContractForPayments, setSelectedContractForPayments] = useState(null);
     const [editingMenuCategory, setEditingMenuCategory] = useState(null);
+    const [editingGallery, setEditingGallery] = useState(null);
+    const [isEditingConfig, setIsEditingConfig] = useState(false);
 
     // Form states
     const [packageForm, setPackageForm] = useState({
         name: '', price: '', capacity: '', duration: 5, extraHourPrice: 0, 
-        includedServices: '', notes: '', description: ''
+        includedServices: '', notes: '', description: '', 
+        numero_tiempos: 3, incluye_menu: true
     });
     const [adicionalForm, setAdicionalForm] = useState({
         name: '', price: '', category: 'Entretenimiento', description: ''
     });
     const [reservationForm, setReservationForm] = useState({
-        cliente: '', paquete: '', fecha_evento: '', hora_inicio: '14:00', 
-        hora_fin: '19:00', num_personas: 100, menu: '', servicios_adicionales: []
+        cliente: '', 
+        paquete: '', 
+        tipo_evento: '',
+        fecha_evento: '', 
+        hora_inicio: '14:00', 
+        hora_fin: '19:00', 
+        num_personas: 100, 
+        horas_adicionales: 0,
+        menu: '', 
+        servicios_adicionales: [],
+        platillos_seleccionados: [],
+        nombre_festejado: '',
+        domicilio_contacto: '',
+        telefono_contacto: '',
+        notas: ''
     });
     const [contractForm, setContractForm] = useState({
         folio: '', representante_salon: 'Graciela Herrera Ramírez',
         lugar_evento: '2 de Abril 2503 Col. El Carmen, Apizaco, Tlax.',
+        domicilio_consumidor: '', telefono_consumidor: '', tipo_evento: 'Evento Social',
+        hora_inicio: '', hora_fin: '',
         cantidad_personas: 0, duracion_horas: 5, total_operacion: 0,
         deposito_garantia: 1000, anticipo_monto: 0, fecha_limite_pago: '', notas_especiales: ''
     });
@@ -67,6 +88,7 @@ export const useAdminDashboard = () => {
         username: '', email: '', password: '', 
         first_name: '', apellido_paterno: '', rol: 'Cliente', estatus: true
     });
+    const [configForm, setConfigForm] = useState(null);
 
     // Confirmation state
     const [confirmState, setConfirmState] = useState({
@@ -94,13 +116,17 @@ export const useAdminDashboard = () => {
         setConfirmState({ isOpen: true, title, message, onConfirm, type: 'confirm', confirmText });
     };
 
+    const triggerPrompt = (title, message, onConfirm, confirmText = 'Aceptar') => {
+        setConfirmState({ isOpen: true, title, message, onConfirm, type: 'prompt', confirmText });
+    };
+
     const triggerAlert = (title, message) => {
         setConfirmState({ isOpen: true, title, message, onConfirm: null, type: 'alert', confirmText: 'Entendido' });
     };
 
     const fetchData = async () => {
         try {
-            const [respPkg, respRes, respAd, respCats, respPlat, respGal, respCont, respClients, respTest, respUsers] = await Promise.all([
+            const [respPkg, respRes, respAd, respCats, respPlat, respGal, respCont, respClients, respTest, respUsers, respConfig] = await Promise.all([
                 paqueteService.getAll(),
                 reservacionService.getAll(),
                 servicioService.getAll(),
@@ -110,7 +136,8 @@ export const useAdminDashboard = () => {
                 contratoService.getAll(),
                 clienteService.getAll(),
                 testimonioService.getAll(),
-                usuarioService.getAll()
+                usuarioService.getAll(),
+                configuracionService.getCurrent()
             ]);
             
             setPackages(respPkg.data.map(p => ({
@@ -121,23 +148,33 @@ export const useAdminDashboard = () => {
                 duration: p.duracion_horas,
                 extraHourPrice: p.precio_hora_adicional,
                 includedServices: p.servicios_incluidos,
-                notes: p.notes,
+                notes: p.notas,
+                description: p.descripcion,
                 image: formatImageUrl(p.imagen) || '/images/Foto 1.jpg',
                 gallery: (p.galeria || []).map(img => ({ id: img.id, url: formatImageUrl(img.imagen) })),
-                layout: 'Editorial'
+                layout: 'Editorial',
+                numero_tiempos: p.numero_tiempos,
+                incluye_menu: p.incluye_menu
             })));
 
             setReservas(respRes.data.map(r => ({
                 id: r.id,
                 cliente: r.cliente_nombre || 'Cliente Anonimo',
+                telefono: r.telefono_contacto || r.cliente_telefono || 'S/N',
+                domicilio: r.domicilio_contacto || '',
+                festejado: r.nombre_festejado || '',
                 email: 'info@sirlux.mx',
                 invitados: r.num_personas,
                 fecha: r.fecha_evento,
                 hora_inicio: r.hora_inicio,
                 hora_fin: r.hora_fin,
                 paquete: r.paquete_nombre,
+                paquete_id: r.paquete,
                 estado: r.estado,
-                total: `$${Number(r.total_estimado).toLocaleString()}`
+                servicios_adicionales: r.servicios_detalle || [],
+                platillos: r.platillos_detalle || [],
+                total: `$${Number(r.total_estimado).toLocaleString()}`,
+                total_raw: Number(r.total_estimado)
             })));
 
             setAdicionales(respAd.data.map(a => ({
@@ -168,7 +205,16 @@ export const useAdminDashboard = () => {
                 reserva_id: c.reservacion,
                 pagos: c.pagos || [],
                 saldo_pendiente: c.saldo_pendiente,
-                total_pagado: c.total_pagado
+                total_pagado: c.total_pagado,
+                // Nuevos campos para el PDF
+                domicilio_consumidor: c.domicilio_consumidor,
+                telefono_consumidor: c.telefono_consumidor,
+                tipo_evento: c.tipo_evento,
+                cantidad_personas: c.cantidad_personas,
+                hora_inicio: c.hora_inicio,
+                hora_fin: c.hora_fin,
+                duracion_horas: c.duracion_horas,
+                fecha_limite_pago: c.fecha_limite_pago
             })));
 
             setClients(respClients.data.map(c => ({
@@ -178,6 +224,7 @@ export const useAdminDashboard = () => {
 
             setTestimonios(respTest.data);
             setUsersList(respUsers.data);
+            setConfigForm(respConfig.data);
           
             const menuObj = {};
             respCats.data.forEach(cat => {
@@ -222,8 +269,13 @@ export const useAdminDashboard = () => {
                 ...prev,
                 folio: `C-${selectedReservationForContract.id}${String(new Date().getMonth() + 1).padStart(2, '0')}${new Date().getFullYear().toString().slice(-2)}`,
                 cantidad_personas: selectedReservationForContract.invitados,
-                total_operacion: Number(selectedReservationForContract.total.replace('$', '').replace(',', '')),
-                anticipo_monto: 0
+                total_operacion: selectedReservationForContract.total_raw || 0,
+                anticipo_monto: 0,
+                telefono_consumidor: selectedReservationForContract.telefono || '',
+                domicilio_consumidor: selectedReservationForContract.domicilio || '',
+                tipo_evento: 'Evento Social',
+                hora_inicio: selectedReservationForContract.hora_inicio || '',
+                hora_fin: selectedReservationForContract.hora_fin || ''
             }));
         }
     }, [selectedReservationForContract]);
@@ -267,6 +319,17 @@ export const useAdminDashboard = () => {
         );
     };
 
+    const handleUpdateGallery = async (id, data) => {
+        try {
+            await galeriaService.update(id, data);
+            await fetchData();
+            setEditingGallery(null);
+            triggerAlert("Imagen Actualizada", "Los datos de la imagen se actualizaron exitosamente");
+        } catch (error) {
+            triggerAlert("Error al actualizar", "No se pudo actualizar la imagen seleccionada.");
+        }
+    };
+
     const handleCreatePackage = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -279,13 +342,15 @@ export const useAdminDashboard = () => {
         data.append('servicios_incluidos', formData.get('includedServices'));
         data.append('notas', formData.get('notes'));
         data.append('descripcion', formData.get('description'));
+        data.append('numero_tiempos', packageForm.numero_tiempos || 0);
+        data.append('incluye_menu', packageForm.incluye_menu ? 'true' : 'false');
         
         if (coverFile) {
             data.append('imagen', coverFile);
         }
 
         galleryPreviews.forEach(p => {
-            data.append('galeria_imgs', p.file);
+            if (p.file) data.append('galeria_imgs', p.file);
         });
         
         try {
@@ -311,9 +376,22 @@ export const useAdminDashboard = () => {
         data.append('servicios_incluidos', formData.get('includedServices'));
         data.append('notas', formData.get('notes'));
         data.append('descripcion', formData.get('description'));
+        data.append('numero_tiempos', packageForm.numero_tiempos || 0);
+        data.append('incluye_menu', packageForm.incluye_menu ? 'true' : 'false');
         
         if (coverFile) data.append('imagen', coverFile);
-        galleryPreviews.forEach(p => data.append('galeria_imgs', p.file));
+        
+        const galleryOrder = [];
+        galleryPreviews.forEach(p => {
+            if (p.id) {
+                galleryOrder.push(p.id.toString());
+            } else if (p.file) {
+                data.append('galeria_imgs', p.file);
+                galleryOrder.push('new');
+            }
+        });
+        data.append('gallery_order', JSON.stringify(galleryOrder));
+        
         if (deletedGalleryIds.length > 0) {
             deletedGalleryIds.forEach(id => data.append('deleted_gallery_ids', id));
         }
@@ -323,7 +401,7 @@ export const useAdminDashboard = () => {
             fetchData();
             setEditingPackage(null);
             resetPackageForm();
-            triggerAlert("Edición Finalizada", "Se han guardado los cambios en la pieza de la colección.");
+            triggerAlert("Edición Finalizada", "Se han guardado los cambios del paquete.");
         } catch (error) {
             triggerAlert("Error de Refinamiento", "No se han podido procesar los cambios realizados en el paquete.");
         }
@@ -406,15 +484,26 @@ export const useAdminDashboard = () => {
     const handleCreateContract = async (e) => {
         e.preventDefault();
         try {
-            await contratoService.create({
+            // Limpieza de datos antes de enviar
+            const payload = {
                 ...contractForm,
-                reservacion: selectedReservationForContract.id
-            });
+                reservacion: selectedReservationForContract.id,
+                fecha_limite_pago: contractForm.fecha_limite_pago || null,
+                anticipo_monto: Number(contractForm.anticipo_monto) || 0,
+                deposito_garantia: Number(contractForm.deposito_garantia) || 0,
+                total_operacion: Number(contractForm.total_operacion) || 0
+            };
+
+            await contratoService.create(payload);
             fetchData();
             setSelectedReservationForContract(null);
             triggerAlert("Contrato Generado", "El acuerdo legal ha sido digitalizado y vinculado a la reserva exitosamente.");
         } catch (error) {
-            triggerAlert("Error de Registro", "Hubo un problema al intentar formalizar el contrato.");
+            console.error("Error formalizando contrato:", error.response?.data || error);
+            const detail = error.response?.data?.detail || 
+                           Object.values(error.response?.data || {}).flat().join(", ") || 
+                           "Verifique los datos (el Folio no debe estar repetido).";
+            triggerAlert("Error de Registro", `No se pudo formalizar el contrato: ${detail}`);
         }
     };
 
@@ -441,9 +530,22 @@ export const useAdminDashboard = () => {
     const handleCreateReservation = async (e) => {
         e.preventDefault();
         try {
-            await reservacionService.create(reservationForm);
+            const payload = {
+                ...reservationForm,
+                num_personas: Number(reservationForm.num_personas),
+                horas_adicionales: Number(reservationForm.horas_adicionales),
+                observaciones: `ADMIN MANUAL - Evento: ${reservationForm.tipo_evento}. Festejado: ${reservationForm.nombre_festejado}. Notas: ${reservationForm.notas || 'Sin notas'}`
+            };
+            await reservacionService.create(payload);
             fetchData();
             setIsAddingReservation(false);
+            setReservationForm({
+                cliente: '', paquete: '', tipo_evento: '', fecha_evento: '', 
+                hora_inicio: '14:00', hora_fin: '19:00', num_personas: 100, 
+                horas_adicionales: 0, menu: '', servicios_adicionales: [],
+                platillos_seleccionados: [], nombre_festejado: '',
+                domicilio_contacto: '', telefono_contacto: '', notas: ''
+            });
             triggerAlert("Inscripción Realizada", "La nueva reserva ha sido integrada al calendario de lujo.");
         } catch (error) {
             triggerAlert("Error de Sistema", "No fue posible registrar la nueva reserva. Verifique disponibilidad.");
@@ -562,10 +664,29 @@ export const useAdminDashboard = () => {
         }
     };
 
+    const handleUpdateConfig = async (e) => {
+        e.preventDefault();
+        try {
+            await configuracionService.updateCurrent(configForm);
+            setIsEditingConfig(false);
+            triggerAlert("Configuración Guardada", "Las reglas globales del sistema han sido actualizadas.");
+        } catch (error) {
+            triggerAlert("Error de Configuración", "No fue posible guardar las nuevas parametrizaciones.");
+        }
+    };
+
+    const handleConfigChange = (e) => {
+        setConfigForm({
+            ...configForm,
+            [e.target.name]: e.target.value
+        });
+    };
+
     const resetPackageForm = () => {
         setPackageForm({
             name: '', price: '', capacity: '', duration: 5, 
-            extraHourPrice: 0, includedServices: '', notes: '', description: ''
+            extraHourPrice: 0, includedServices: '', notes: '', description: '',
+            numero_tiempos: 3, incluye_menu: true
         });
         setCoverPreview(null); setCoverFile(null);
         setGalleryPreviews([]); setDeletedGalleryIds([]);
@@ -631,31 +752,44 @@ export const useAdminDashboard = () => {
         );
     };
 
+    const handleCreateCategory = async (catName) => {
+        try {
+            await menuService.createCategoria({ nombre: catName });
+            fetchData();
+            triggerAlert("Categoría Creada", `La sección '${catName}' se ha añadido al menú.`);
+        } catch (error) {
+            triggerAlert("Error de Catálogo", "No se pudo crear la nueva categoría. Es posible que el nombre ya exista.");
+        }
+    };
+
     return {
         activeTab, setActiveTab, userRole, clients, contracts, testimonios,
         usersList, packages, reservas, adicionales, menus, galeria, 
         searchTerm, setSearchTerm, reservaFilter, setReservaFilter,
         galleryFilter, setGalleryFilter, adicionalFilter, setAdicionalFilter,
+        userRoleFilter, setUserRoleFilter, contractFilter, setContractFilter,
         isAddingPackage, setIsAddingPackage, editingPackage, setEditingPackage,
         isAddingAdicional, setIsAddingAdicional, editingAdicional, setEditingAdicional,
         isAddingGallery, setIsAddingGallery, isAddingReservation, setIsAddingReservation,
         isAddingUser, setIsAddingUser,
+        isEditingConfig, setIsEditingConfig,
         selectedReservationForContract, setSelectedReservationForContract,
         selectedContractForPayments, setSelectedContractForPayments,
         editingMenuCategory, setEditingMenuCategory,
+        editingGallery, setEditingGallery,
         packageForm, setPackageForm, adicionalForm, setAdicionalForm,
         reservationForm, setReservationForm, contractForm, setContractForm,
-        userForm, setUserForm,
-        confirmState, setConfirmState, triggerConfirm, triggerAlert,
+        userForm, setUserForm, configForm, setConfigForm,
+        confirmState, setConfirmState, triggerConfirm, triggerPrompt, triggerAlert,
         coverPreview, setCoverPreview, galleryPreviews, setGalleryPreviews,
         coverFile, setCoverFile, deletedGalleryIds, setDeletedGalleryIds,
-        fetchData, handleCreateGallery, handleDeleteGallery, handleCreatePackage,
+        fetchData, handleCreateGallery, handleUpdateGallery, handleDeleteGallery, handleCreatePackage,
         handleUpdatePackage, handleDeletePackage, handleApproveTestimonio,
         handleDeleteTestimonio, handleCancelReservation, handleCreateContract,
         handleCreatePayment, handleCreateReservation, handleCreateAdicional,
         handleUpdateAdicional, handleDeleteAdicional, handleUpdateUserRole,
         handleToggleUserStatus, handleDeleteUser, handleCreateUser, resetPackageForm, 
-        resetAdicionalForm, resetUserForm,
-        normalizeText, formatImageUrl, handleRenameCategory, handleRemoveItem, handleRemoveCategory
+        resetAdicionalForm, resetUserForm, handleUpdateConfig, handleConfigChange,
+        normalizeText, formatImageUrl, handleRenameCategory, handleRemoveItem, handleRemoveCategory, handleCreateCategory
     };
 };

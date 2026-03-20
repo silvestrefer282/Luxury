@@ -1,11 +1,12 @@
 import React from 'react';
-import { Trash2, Image as ImageIcon } from 'lucide-react';
+import { Trash2, Edit2, Image as ImageIcon } from 'lucide-react';
 
 const GalleryView = ({ 
     galeria, 
     galleryFilter, 
     setGalleryFilter, 
     handleDeleteGallery,
+    setEditingGallery,
     setIsAddingGallery 
 }) => (
     <div className="animate-in fade-in slide-in-from-right-5 duration-700">
@@ -35,6 +36,7 @@ const GalleryView = ({
                     <img src={img.url} alt={img.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-all duration-1000 grayscale group-hover:grayscale-0" />
                     <div className="absolute inset-0 bg-gradient-to-t from-luxury-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-700 p-10 flex flex-col justify-between">
                         <div className="flex justify-end gap-5 translate-y-[-20px] group-hover:translate-y-0 transition-transform duration-500">
+                            <button onClick={() => setEditingGallery(img)} className="p-4 bg-white text-luxury-black hover:bg-black hover:text-white transition-colors shadow-2xl rounded-2xl"><Edit2 size={16} /></button>
                             <button onClick={() => handleDeleteGallery(img.id)} className="p-4 bg-white text-luxury-black hover:bg-red-600 hover:text-white transition-colors shadow-2xl rounded-2xl"><Trash2 size={16} /></button>
                         </div>
                         <div>

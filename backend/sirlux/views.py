@@ -21,6 +21,22 @@ from .serializers import (
 )
 from .services import calcular_costo_reservacion, verificar_disponibilidad
 
+class ConfiguracionSistemaViewSet(viewsets.ModelViewSet):
+    queryset = ConfiguracionSistema.objects.all()
+    serializer_class = ConfiguracionSistemaSerializer
+
+    @decorators.action(detail=False, methods=['get', 'put'])
+    def current(self, request):
+        config = ConfiguracionSistema.get_solo()
+        if request.method == 'PUT':
+            serializer = self.get_serializer(config, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(config)
+        return Response(serializer.data)
+
 class ReservacionViewSet(viewsets.ModelViewSet):
     queryset = Reservacion.objects.all()
     serializer_class = ReservacionSerializer
@@ -42,6 +58,13 @@ class ReservacionViewSet(viewsets.ModelViewSet):
         paquete = Paquete.objects.get(id=data['paquete'])
         menu = Menu.objects.get(id=data['menu']) if data.get('menu') else None
         
+        # Validar número de platillos vs tiempos del paquete
+        platillos_ids = data.get('platillos_seleccionados', [])
+        if len(platillos_ids) > paquete.numero_tiempos:
+            raise serializers.ValidationError(
+                f"El paquete '{paquete.nombre}' solo permite {paquete.numero_tiempos} tiempos (platillos). Ha seleccionado {len(platillos_ids)}."
+            )
+        
         hora_inicio = datetime.strptime(data['hora_inicio'], '%H:%M').time()
         hora_fin = datetime.strptime(data['hora_fin'], '%H:%M').time()
         fecha = datetime.strptime(data['fecha_evento'], '%Y-%m-%d').date()
@@ -61,7 +84,11 @@ class ReservacionViewSet(viewsets.ModelViewSet):
         }
         total = calcular_costo_reservacion(calc_data, data.get('servicios_adicionales', []))
         
-        serializer.save(total_estimado=total)
+        reserva = serializer.save(total_estimado=total)
+        
+        # Guardar platillos seleccionados
+        if platillos_ids:
+            reserva.platillos_seleccionados.set(platillos_ids)
 
     @decorators.action(detail=False, methods=['get'])
     def disponibilidad(self, request):
@@ -123,6 +150,7 @@ class PaqueteViewSet(viewsets.ModelViewSet):
             ImagenPaquete.objects.create(paquete=paquete, imagen=img, orden=i)
 
     def perform_update(self, serializer):
+        import json
         paquete = serializer.save()
         
         # 1. Eliminar imágenes específicas si se envían sus IDs
@@ -130,13 +158,36 @@ class PaqueteViewSet(viewsets.ModelViewSet):
         if deleted_ids:
             ImagenPaquete.objects.filter(id__in=deleted_ids, paquete=paquete).delete()
 
-        # 2. Agregar nuevas imágenes sin borrar las anteriores (Append)
+        # 2. Reordenar y agregar nuevas imágenes
+        gallery_order_str = self.request.data.get('gallery_order', None)
         galeria = self.request.FILES.getlist('galeria_imgs')
-        if galeria:
-            # Calculamos el orden inicial basado en cuántas ya hay
-            ultimo_orden = paquete.galeria.count()
-            for i, img in enumerate(galeria):
-                ImagenPaquete.objects.create(paquete=paquete, imagen=img, orden=ultimo_orden + i)
+        
+        if gallery_order_str:
+            try:
+                gallery_order = json.loads(gallery_order_str)
+                new_file_idx = 0
+                
+                for idx, item in enumerate(gallery_order):
+                    if item == 'new':
+                        if new_file_idx < len(galeria):
+                            img = galeria[new_file_idx]
+                            ImagenPaquete.objects.create(paquete=paquete, imagen=img, orden=idx)
+                            new_file_idx += 1
+                    else:
+                        try:
+                            existing_img = ImagenPaquete.objects.get(id=int(item), paquete=paquete)
+                            existing_img.orden = idx
+                            existing_img.save()
+                        except (ImagenPaquete.DoesNotExist, ValueError):
+                            pass
+            except json.JSONDecodeError:
+                pass
+        else:
+            # Fallback for append if order is not explicitly provided
+            if galeria:
+                ultimo_orden = paquete.galeria.count()
+                for i, img in enumerate(galeria):
+                    ImagenPaquete.objects.create(paquete=paquete, imagen=img, orden=ultimo_orden + i)
 
 class MenuViewSet(viewsets.ModelViewSet):
     queryset = Menu.objects.all()
@@ -201,9 +252,20 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                 
         user = authenticate(username=username, password=password)
         if user:
+            if hasattr(user, 'estatus') and not user.estatus:
+                return Response({"error": "Cuenta desactivada. Por favor, contacte a un administrador."}, status=status.HTTP_403_FORBIDDEN)
+            if not user.is_active:
+                return Response({"error": "Cuenta inactiva."}, status=status.HTTP_403_FORBIDDEN)
+            
             token, _ = Token.objects.get_or_create(user=user)
             return Response({"token": token.key, "user": UsuarioSerializer(user).data})
-        return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Check if the user exists but is deactivated, authenticate() returns None if is_active is boolean False
+        user_check = Usuario.objects.filter(username=username).first()
+        if user_check and not user_check.estatus:
+            return Response({"error": "Cuenta desactivada. Por favor, contacte a un administrador."}, status=status.HTTP_403_FORBIDDEN)
+            
+        return Response({"error": "Usuario no registrado o contraseña incorrecta."}, status=status.HTTP_401_UNAUTHORIZED)
 
 class TestimonioViewSet(viewsets.ModelViewSet):
     queryset = Testimonio.objects.all()

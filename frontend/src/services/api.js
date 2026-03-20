@@ -104,6 +104,11 @@ export const usuarioService = {
     delete: (id) => api.delete(`usuarios/${id}/`),
 };
 
+export const configuracionService = {
+    getCurrent: () => api.get('configuracion/current/'),
+    updateCurrent: (data) => api.put('configuracion/current/', data),
+};
+
 export default api;
 export const authService = {
     login: (credentials) => api.post('usuarios/login/', {

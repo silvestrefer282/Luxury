@@ -15,10 +15,10 @@ const MenuCard = ({ category, menus, setEditingMenuCategory, handleRemoveCategor
                 </div>
             </div>
 
-            <ul className="space-y-6 relative z-10">
-                {menus[category]?.items?.slice(0, 5).map((item, i) => (
-                    <li key={item.id} className="flex gap-6 items-start group/item border-b border-luxury-black/5 pb-4 hover:border-luxury-black transition-all">
-                        <span className="text-lg font-serif text-luxury-black opacity-20 group-hover/item:opacity-100 transition-opacity">0{i + 1}</span>
+            <ul className="space-y-6 relative z-10 max-h-[350px] overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-luxury-black/10 hover:[&::-webkit-scrollbar-thumb]:bg-luxury-black/30">
+                {menus[category]?.items?.map((item, i) => (
+                    <li key={item.id} className="flex gap-6 items-start group/item border-b border-luxury-black/5 pb-4 hover:border-luxury-black transition-all mr-2">
+                        <span className="text-lg font-serif text-luxury-black opacity-20 group-hover/item:opacity-100 transition-opacity">{i < 9 ? `0${i + 1}` : i + 1}</span>
                         <span className="text-sm font-light text-luxury-gray-dark group-hover/item:text-luxury-black transition-colors">{item.nombre}</span>
                     </li>
                 ))}

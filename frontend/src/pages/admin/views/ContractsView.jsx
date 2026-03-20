@@ -2,14 +2,49 @@ import React from 'react';
 import { Wallet, Printer, Trash2 } from 'lucide-react';
 import { generateContractPDF } from '../../../utils/pdfGenerator';
 import { contratoService } from '../../../services/api';
+import { logoB64 } from '../../../assets/logo_data';
 
 const ContractsView = ({ 
     contracts, 
     reservas, 
     fetchData,
-    setSelectedContractForPayments 
-}) => (
+    setSelectedContractForPayments,
+    searchTerm,
+    normalizeText,
+    contractFilter,
+    setContractFilter
+}) => {
+    const states = ['Todos', 'Firmado', 'Pendiente'];
+
+    const filteredContracts = contracts.filter(c => {
+        const matchesSearch = !searchTerm || (
+            normalizeText(String(c.folio)).includes(normalizeText(searchTerm)) || 
+            normalizeText(c.cliente).includes(normalizeText(searchTerm))
+        );
+        const isFirmado = c.firmado ? 'Firmado' : 'Pendiente';
+        const matchesState = contractFilter === 'Todos' || isFirmado === contractFilter;
+        return matchesSearch && matchesState;
+    });
+
+    return (
     <div className="space-y-16 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <div className="flex justify-end items-center mb-10 border-b border-luxury-black pb-8">
+            <div className="flex gap-4">
+                {states.map(state => (
+                    <button
+                        key={state}
+                        onClick={() => setContractFilter(state)}
+                        className={`text-[10px] uppercase tracking-[0.3em] font-bold px-8 py-3 border rounded-full transition-all duration-300 ${
+                            contractFilter === state 
+                                ? 'bg-luxury-black text-white border-luxury-black shadow-sm' 
+                                : 'border-black/10 hover:border-black text-luxury-black/60 hover:text-luxury-black shadow-sm'
+                        }`}
+                    >
+                        {state}
+                    </button>
+                ))}
+            </div>
+        </div>
         <div className="bg-white border border-luxury-black/5 shadow-2xl overflow-hidden">
             <table className="w-full text-left border-collapse">
                 <thead>
@@ -24,7 +59,7 @@ const ContractsView = ({
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-luxury-black/5">
-                    {contracts.map((c) => (
+                    {filteredContracts.map((c) => (
                         <tr key={c.id} className="group hover:bg-luxury-black transition-all duration-700">
                             <td className="py-12 px-8 text-xl font-serif text-luxury-black group-hover:text-white">{c.folio}</td>
                             <td className="py-12 px-8">
@@ -51,7 +86,7 @@ const ContractsView = ({
                                 <button 
                                     onClick={() => {
                                         const resData = reservas.find(r => r.id === c.reserva_id);
-                                        generateContractPDF(c, resData);
+                                        generateContractPDF(c, resData, logoB64);
                                     }}
                                     className="p-4 border border-luxury-black/5 text-luxury-black hover:bg-luxury-black hover:text-white transition-all group-hover:bg-white/10 group-hover:text-white group-hover:hover:bg-luxury-black rounded-xl"
                                     title="Imprimir Contrato"
@@ -71,6 +106,7 @@ const ContractsView = ({
             </table>
         </div>
     </div>
-);
+    );
+};
 
 export default ContractsView;

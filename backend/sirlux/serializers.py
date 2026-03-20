@@ -72,7 +72,10 @@ class ConfiguracionSistemaSerializer(serializers.ModelSerializer):
 
 class ReservacionSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.ReadOnlyField(source='cliente.usuario.get_full_name')
+    cliente_telefono = serializers.ReadOnlyField(source='cliente.usuario.telefono')
     paquete_nombre = serializers.ReadOnlyField(source='paquete.nombre')
+    servicios_detalle = ServicioAdicionalSerializer(source='servicios_adicionales', many=True, read_only=True)
+    platillos_detalle = PlatilloSerializer(source='platillos_seleccionados', many=True, read_only=True)
     has_testimonio = serializers.SerializerMethodField()
     
     class Meta:

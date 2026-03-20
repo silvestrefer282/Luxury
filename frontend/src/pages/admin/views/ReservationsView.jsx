@@ -1,6 +1,7 @@
 import React from 'react';
 import { Printer, FileCheck, X } from 'lucide-react';
 import { generateContractPDF } from '../../../utils/pdfGenerator';
+import { logoB64 } from '../../../assets/logo_data';
 
 const ReservationsView = ({ 
     reservas, 
@@ -85,7 +86,7 @@ const ReservationsView = ({
                                             <button 
                                                 onClick={() => {
                                                     const contract = contracts.find(c => c.reserva_id === res.id);
-                                                    generateContractPDF(contract, res);
+                                                    generateContractPDF(contract, res, logoB64);
                                                 }}
                                                 className="p-4 border border-luxury-black/5 text-luxury-black hover:bg-luxury-black hover:text-white transition-all group-hover:bg-white/10 group-hover:text-white group-hover:hover:bg-luxury-black rounded-xl"
                                                 title="Imprimir Contrato"

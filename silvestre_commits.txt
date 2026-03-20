@@ -1,0 +1,23 @@
+commit 7ff91ca9120fd47de6088b753f5064b0bcfa97c2
+Author: silvestre <silvestrefer28@gmail.com>
+Date:   Mon Mar 16 20:00:10 2026 -0600
+
+    primer commit
+
+commit f33d39a0c021262ebdd1db5018a708235c201663
+Author: AniClau <parra.anita06@gmail.com>
+Date:   Fri Mar 13 19:36:16 2026 -0600
+
+    Fix UI bugs: Optimistic UI testimonios, added min=0 to numbers, fixed modals overflow
+
+commit 2eb3be58ec52879e1cc1949e9d102ec660832b04
+Author: AniClau <parra.anita06@gmail.com>
+Date:   Thu Mar 12 14:17:00 2026 -0600
+
+    2
+
+commit 0d37c803d2bc2ccc756286c82c9199e9907a3a06
+Author: AniClau <parra.anita06@gmail.com>
+Date:   Wed Mar 11 11:48:02 2026 -0600
+
+    1
