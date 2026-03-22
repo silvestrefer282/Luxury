@@ -56,15 +56,15 @@ const AdminTopbar = ({
                 </div>
             </div>
             
-            <div className="flex flex-wrap items-center gap-4 md:gap-12 w-full md:w-auto mt-4 md:mt-0">
+            <div className="flex items-center gap-4 md:gap-12 overflow-x-auto min-w-max pb-2 md:pb-0 mt-4 md:mt-0">
                 {showSearch && (
-                    <div className="relative group w-full md:w-auto">
+                    <div className="relative group">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-luxury-gray-mid group-hover:text-luxury-black transition-colors" size={16} />
                         <input 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder={getSearchPlaceholder()} 
-                            className="bg-luxury-white/50 border-b-2 border-luxury-black/5 py-4 min-px-2 md:py-5 pl-16 pr-8 text-[11px] uppercase tracking-widest font-bold focus:border-luxury-black transition-all outline-none w-full md:w-96 placeholder:text-luxury-gray-light" 
+                            className="bg-luxury-white/50 border-b-2 border-luxury-black/5 py-5 pl-16 pr-8 text-[11px] uppercase tracking-widest font-bold focus:border-luxury-black transition-all outline-none w-48 md:w-96 placeholder:text-luxury-gray-light" 
                         />
                     </div>
                 )}

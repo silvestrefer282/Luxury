@@ -131,24 +131,42 @@ class ReservacionViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=['post'])
     def cancelar(self, request, pk=None):
         reserva = self.get_object()
-        config = ConfiguracionSistema.get_solo()
         hoy = timezone.now().date()
+        
+        if reserva.estado in ['Cancelada', 'Finalizada']:
+            return Response({"error": f"La reserva ya se encuentra en estado {reserva.estado}."}, status=status.HTTP_400_BAD_REQUEST)
+            
         dias_faltantes = (reserva.fecha_evento - hoy).days
         
-        # Regla de penalización
+        # Reglas de penalización solicitadas:
+        # En caso de cancelación no hay reembolso de los $1000 que dejo como apartado y depósito de su evento
+        # Si cancela a los 2 meses de la fecha de su evento se le retendran $2000 mil pesos ADICIONAL AL DEPÓSITO
+        # Si cancela al mes o menos de la fecha de su evento se le retendran $4000 mil pesos ADICIONAL AL DEPÓSITO
+        
         deposito = Decimal('1000.00')
-        if dias_faltantes >= config.dias_limite_cancelacion:
-            penalizacion = Decimal('2000.00')
-        else:
-            penalizacion = Decimal('4000.00')
+        penalizacion_adicional = Decimal('0.00')
+        
+        if dias_faltantes <= 30: # 1 mes o menos
+            penalizacion_adicional = Decimal('4000.00')
+        elif dias_faltantes <= 60: # 2 meses
+            penalizacion_adicional = Decimal('2000.00')
+            
+        retencion_total = deposito + penalizacion_adicional
             
         reserva.estado = 'Cancelada'
-        reserva.observaciones = f"Cancelada el {hoy}. Retención: {deposito} (depósito) + {penalizacion} (penalización)."
+        nota = f"Cancelada el {hoy}. Retención total: ${retencion_total} (Depósito: ${deposito} + Penalización adicional: ${penalizacion_adicional})."
+        
+        # Preservar observaciones previas si existen
+        if reserva.observaciones:
+            reserva.observaciones = f"{reserva.observaciones} | {nota}"
+        else:
+            reserva.observaciones = nota
+            
         reserva.save()
         
         return Response({
             "status": "Cancelada",
-            "retencion_total": deposito + penalizacion,
+            "retencion_total": retencion_total,
             "detalle": reserva.observaciones
         })
 

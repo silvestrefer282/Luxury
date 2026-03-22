@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { X, Mail, Lock, User, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
+import { X, Mail, Lock, User, ArrowRight, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
 
@@ -12,6 +12,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     const { login } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [successMsg, setSuccessMsg] = useState(null);
     
     // Estado para el checkbox de términos
     const [aceptaTerminos, setAceptaTerminos] = useState(false);
@@ -31,6 +32,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
         if (isOpen) {
             setMode(initialMode);
             setError(null);
+            setSuccessMsg(null);
             setFormErrors({});
             setAceptaTerminos(false); // Reiniciar checkbox al abrir
             // Hacer scroll al principio en móviles
@@ -49,8 +51,16 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
         e.preventDefault();
         
         const newErrors = {};
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
         if (mode === 'register' && !formData.nombre.trim()) newErrors.nombre = 'Requerido';
-        if (!formData.email.trim()) newErrors.email = 'Requerido';
+
+        if (!formData.email.trim()) {
+            newErrors.email = 'Requerido';
+        } else if (mode === 'register' && !emailRegex.test(formData.email)) {
+            newErrors.email = 'El correo electrónico no es válido';
+        }
+
         if (!formData.password) newErrors.password = 'Requerido';
         if (mode === 'register' && !formData.confirmPassword) newErrors.confirmPassword = 'Requerido';
         
@@ -87,15 +97,24 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 });
             }
 
-            const { user, token } = response.data;
-            login(user, token);
-            
-            // Redirigir si es admin
-            if (user.rol === 'Administrador') {
-                navigate('/admin');
+            if (mode === 'login') {
+                const { user, token } = response.data;
+                login(user, token);
+                if (user.rol === 'Administrador') {
+                    navigate('/admin');
+                }
+                onClose();
+            } else {
+                setSuccessMsg('Tu usuario fue creado exitosamente. Preparando tu espacio exclusivo...');
+                setTimeout(() => {
+                    const { user, token } = response.data;
+                    login(user, token);
+                    if (user.rol === 'Administrador') {
+                        navigate('/admin');
+                    }
+                    onClose();
+                }, 2500);
             }
-            
-            onClose();
         } catch (err) {
             console.error('Auth Error:', err);
             setError(err.response?.data || err.message || 'Ocurrió un error inesperado');
@@ -191,200 +210,222 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                 <X size={24} />
                             </button>
 
-                            <div className="mb-8 sm:mb-12">
-                                <span className="text-[10px] uppercase tracking-[0.6em] text-black/30 font-bold block mb-4 border-l-2 border-black px-4">
-                                    Portal de Acceso
-                                </span>
-                                <h3 className="text-4xl sm:text-5xl font-serif uppercase tracking-tight text-black">
-                                    {mode === 'login' ? (
-                                        <>Iniciar <span className="italic font-light">Sesión</span></>
-                                    ) : (
-                                        <>Registrarse</>
-                                    )}
-                                </h3>
-                            </div>
-
-                            {error && (
+                            {successMsg ? (
                                 <motion.div 
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mb-10 border border-luxury-black/10 bg-white p-6 md:p-8 flex flex-col gap-3 rounded-2xl shadow-sm"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="h-full min-h-[400px] flex flex-col items-center justify-center text-center space-y-8"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-1.5 h-1.5 bg-red-700 rotate-45" />
-                                        <span className="text-[9px] uppercase tracking-[0.5em] font-bold text-luxury-gray-mid italic block">
-                                            Aviso de Acceso
-                                        </span>
+                                    <div className="w-24 h-24 bg-luxury-black text-luxury-white rounded-full flex items-center justify-center mb-4 shadow-2xl">
+                                        <CheckCircle size={48} />
                                     </div>
-                                    <div className="text-[10px] uppercase tracking-widest font-black text-luxury-black/80 pl-4 border-l border-luxury-black/10">
-                                        {renderError()}
-                                    </div>
+                                    <h3 className="text-4xl font-serif text-luxury-black">¡Bienvenido!</h3>
+                                    <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-luxury-gray-mid leading-relaxed max-w-xs mx-auto">
+                                        {successMsg}
+                                    </p>
+                                    <Loader2 className="animate-spin text-luxury-gray-light mt-8" size={24} />
                                 </motion.div>
-                            )}
-
-                            <form onSubmit={handleSubmit} noValidate className={mode === 'register' ? "space-y-8" : "space-y-12"}>
-                                {mode === 'register' && (
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">Nombre Completo</label>
-                                        <div className="relative border-b border-black/10 focus-within:border-black transition-all pb-3 flex items-center gap-4">
-                                            <User size={16} className="text-black/20" />
-                                            <input 
-                                                type="text" 
-                                                name="nombre"
-                                                value={formData.nombre}
-                                                onChange={handleChange}
-                                                placeholder="Tu nombre"
-                                                className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
-                                            />
-                                        </div>
-                                        {formErrors.nombre && (
-                                            <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
-                                                * {formErrors.nombre}
-                                            </p>
-                                        )}
+                            ) : (
+                                <>
+                                    <div className="mb-8 sm:mb-12">
+                                        <span className="text-[10px] uppercase tracking-[0.6em] text-black/30 font-bold block mb-4 border-l-2 border-black px-4">
+                                            Portal de Acceso
+                                        </span>
+                                        <h3 className="text-4xl sm:text-5xl font-serif uppercase tracking-tight text-black">
+                                            {mode === 'login' ? (
+                                                <>Iniciar <span className="italic font-light">Sesión</span></>
+                                            ) : (
+                                                <>Registrarse</>
+                                            )}
+                                        </h3>
                                     </div>
-                                )}
 
-                                <div className="space-y-3">
-                                    <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">
-                                        {mode === 'login' ? 'Usuario o Correo' : 'Dirección de Correo'}
-                                    </label>
-                                    <div className="relative border-b border-black/10 focus-within:border-black transition-all pb-3 flex items-center gap-4">
-                                        {mode === 'login' ? <User size={16} className="text-black/20" /> : <Mail size={16} className="text-black/20" />}
-                                        <input 
-                                            type={mode === 'login' ? "text" : "email"} 
-                                            name="email"
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                            placeholder={mode === 'login' ? "Usuario o correo" : "email@example.com"}
-                                            className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
-                                        />
-                                    </div>
-                                    {formErrors.email && (
-                                        <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
-                                            * {formErrors.email}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-end">
-                                        <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">Contraseña</label>
-                                        {mode === 'login' && (
-                                            <button type="button" className="text-[9px] uppercase tracking-widest text-black/40 hover:text-black transition-colors">
-                                                ¿Olvidó su clave?
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="relative border-b border-black/10 focus-within:border-black transition-all pb-3 flex items-center gap-4">
-                                        <Lock size={16} className="text-black/20" />
-                                        <input 
-                                            type={showPassword ? "text" : "password"} 
-                                            name="password"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            placeholder="Luxury24"
-                                            maxLength="8"
-                                            className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="text-black/20 hover:text-black transition-colors flex shrink-0"
+                                    {error && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="mb-10 border border-luxury-black/10 bg-white p-6 md:p-8 flex flex-col gap-3 rounded-2xl shadow-sm"
                                         >
-                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                        </button>
-                                    </div>
-                                    {formErrors.password && (
-                                        <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
-                                            * {formErrors.password}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {mode === 'register' && (
-                                    <>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">Confirmar Contraseña</label>
-                                            <div className="relative border-b border-black/10 focus-within:border-black transition-all pb-3 flex items-center gap-4">
-                                                <Lock size={16} className="text-black/20" />
-                                                <input 
-                                                    type={showConfirmPassword ? "text" : "password"} 
-                                                    name="confirmPassword"
-                                                    value={formData.confirmPassword}
-                                                    onChange={handleChange}
-                                                    placeholder="Luxury24"
-                                                    maxLength="8"
-                                                    className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                    className="text-black/20 hover:text-black transition-colors flex shrink-0"
-                                                >
-                                                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                                </button>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-1.5 h-1.5 bg-red-700 rotate-45" />
+                                                <span className="text-[9px] uppercase tracking-[0.5em] font-bold text-luxury-gray-mid italic block">
+                                                    Aviso de Acceso
+                                                </span>
                                             </div>
-                                            {formErrors.confirmPassword && (
+                                            <div className="text-[10px] uppercase tracking-widest font-black text-luxury-black/80 pl-4 border-l border-luxury-black/10">
+                                                {renderError()}
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    <form onSubmit={handleSubmit} noValidate className={mode === 'register' ? "space-y-8" : "space-y-12"}>
+                                        {mode === 'register' && (
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">Nombre Completo</label>
+                                                <div className="relative border-b border-black/10 focus-within:border-black transition-all pb-3 flex items-center gap-4">
+                                                    <User size={16} className="text-black/20" />
+                                                    <input 
+                                                        type="text" 
+                                                        name="nombre"
+                                                        value={formData.nombre}
+                                                        onChange={handleChange}
+                                                        placeholder="Tu nombre"
+                                                        className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
+                                                    />
+                                                </div>
+                                                {formErrors.nombre && (
+                                                    <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
+                                                        * {formErrors.nombre}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">
+                                                {mode === 'login' ? 'Usuario o Correo' : 'Dirección de Correo'}
+                                            </label>
+                                            <div className="relative border-b border-black/10 focus-within:border-black transition-all pb-3 flex items-center gap-4">
+                                                {mode === 'login' ? <User size={16} className="text-black/20" /> : <Mail size={16} className="text-black/20" />}
+                                                <input 
+                                                    type={mode === 'login' ? "text" : "email"} 
+                                                    name="email"
+                                                    value={formData.email}
+                                                    onChange={handleChange}
+                                                    placeholder={mode === 'login' ? "Usuario o correo" : "email@example.com"}
+                                                    className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
+                                                    autoComplete={mode === 'login' ? "username" : "off"}
+                                                />
+                                            </div>
+                                            {formErrors.email && (
                                                 <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
-                                                    * {formErrors.confirmPassword}
+                                                    * {formErrors.email}
                                                 </p>
                                             )}
                                         </div>
 
-                                        {/* Sección de Términos y Condiciones */}
-                                        <div className="pt-2">
-                                            <label className="flex items-center gap-3 cursor-pointer group">
-                                                <div className="relative flex items-center justify-center">
-                                                    <input 
-                                                        type="checkbox"
-                                                        checked={aceptaTerminos}
-                                                        onChange={(e) => setAceptaTerminos(e.target.checked)}
-                                                        className="peer appearance-none w-4 h-4 border border-black/20 rounded-sm checked:bg-black transition-all"
-                                                    />
-                                                    <div className="absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none">
-                                                        <svg size={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-end">
+                                                <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">Contraseña</label>
+                                                {mode === 'login' && (
+                                                    <button type="button" className="text-[9px] uppercase tracking-widest text-black/40 hover:text-black transition-colors">
+                                                        ¿Olvidó su clave?
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="relative border-b border-black/10 focus-within:border-black transition-all pb-3 flex items-center gap-4">
+                                                <Lock size={16} className="text-black/20" />
+                                                <input 
+                                                    type={showPassword ? "text" : "password"} 
+                                                    name="password"
+                                                    value={formData.password}
+                                                    onChange={handleChange}
+                                                    placeholder="Luxury24"
+                                                    maxLength="8"
+                                                    className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
+                                                    autoComplete={mode === 'login' ? "current-password" : "new-password"}
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="text-black/20 hover:text-black transition-colors flex shrink-0"
+                                                >
+                                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                </button>
+                                            </div>
+                                            {formErrors.password && (
+                                                <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
+                                                    * {formErrors.password}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {mode === 'register' && (
+                                            <>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">Confirmar Contraseña</label>
+                                                    <div className="relative border-b border-black/10 focus-within:border-black transition-all pb-3 flex items-center gap-4">
+                                                        <Lock size={16} className="text-black/20" />
+                                                        <input 
+                                                            type={showConfirmPassword ? "text" : "password"} 
+                                                            name="confirmPassword"
+                                                            value={formData.confirmPassword}
+                                                            onChange={handleChange}
+                                                            placeholder="Luxury24"
+                                                            maxLength="8"
+                                                            className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
+                                                            autoComplete="new-password"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                            className="text-black/20 hover:text-black transition-colors flex shrink-0"
+                                                        >
+                                                            {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                        </button>
                                                     </div>
+                                                    {formErrors.confirmPassword && (
+                                                        <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
+                                                            * {formErrors.confirmPassword}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                                <span className="text-[10px] uppercase tracking-widest font-bold text-black/40 group-hover:text-black transition-colors italic">
-                                                    Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="underline decoration-black/20 underline-offset-4 hover:decoration-black">Términos y Condiciones</a>
-                                                </span>
-                                            </label>
-                                        </div>
-                                    </>
-                                )}
 
-                                <button 
-                                    type="submit"
-                                    disabled={loading || (mode === 'register' && !aceptaTerminos)}
-                                    className="w-full py-8 bg-black text-white text-[11px] uppercase tracking-[0.5em] font-black shadow-2xl hover:bg-black/90 transition-all flex items-center justify-center gap-4 group rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {loading ? (
-                                        <Loader2 className="animate-spin" size={20} />
-                                    ) : (
-                                        <div className="flex items-center gap-4">
-                                            <span>{mode === 'login' ? 'Iniciar Sesión' : 'Registrarse'}</span>
-                                            <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
-                                        </div>
-                                    )}
-                                </button>
-                            </form>
+                                                {/* Sección de Términos y Condiciones */}
+                                                <div className="pt-2">
+                                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                                        <div className="relative flex items-center justify-center">
+                                                            <input 
+                                                                type="checkbox"
+                                                                checked={aceptaTerminos}
+                                                                onChange={(e) => setAceptaTerminos(e.target.checked)}
+                                                                className="peer appearance-none w-4 h-4 border border-black/20 rounded-sm checked:bg-black transition-all"
+                                                            />
+                                                            <div className="absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none">
+                                                                <svg size={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-[10px] uppercase tracking-widest font-bold text-black/40 group-hover:text-black transition-colors italic">
+                                                            Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="underline decoration-black/20 underline-offset-4 hover:decoration-black">Términos y Condiciones</a>
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            </>
+                                        )}
 
-                            <div className="mt-16 pt-8 border-t border-black/5 flex flex-col sm:flex-row justify-between items-center gap-6">
-                                <p className="text-[10px] text-black/40 font-bold uppercase tracking-widest">
-                                    {mode === 'login' ? '¿No tiene una cuenta registrada?' : '¿Ya es parte de Luxury?'}
-                                </p>
-                                <button 
-                                    onClick={() => {
-                                        setMode(mode === 'login' ? 'register' : 'login');
-                                        setError(null);
-                                    }}
-                                    className="text-[10px] uppercase tracking-[0.3em] font-black text-black border-b-2 border-black pb-1 hover:opacity-50 transition-all"
-                                >
-                                    {mode === 'login' ? 'Registrarse' : 'Iniciar Sesión Ahora'}
-                                </button>
-                            </div>
+                                        <button 
+                                            type="submit"
+                                            disabled={loading || (mode === 'register' && !aceptaTerminos) || successMsg}
+                                            className="w-full py-8 bg-black text-white text-[11px] uppercase tracking-[0.5em] font-black shadow-2xl hover:bg-black/90 transition-all flex items-center justify-center gap-4 group rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {loading ? (
+                                                <Loader2 className="animate-spin" size={20} />
+                                            ) : (
+                                                <div className="flex items-center gap-4">
+                                                    <span>{mode === 'login' ? 'Iniciar Sesión' : 'Registrarse'}</span>
+                                                    <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
+                                                </div>
+                                            )}
+                                        </button>
+                                    </form>
+
+                                    <div className="mt-16 pt-8 border-t border-black/5 flex flex-col sm:flex-row justify-between items-center gap-6">
+                                        <p className="text-[10px] text-black/40 font-bold uppercase tracking-widest">
+                                            {mode === 'login' ? '¿No tiene una cuenta registrada?' : '¿Ya es parte de Luxury?'}
+                                        </p>
+                                        <button 
+                                            onClick={() => {
+                                                setMode(mode === 'login' ? 'register' : 'login');
+                                                setError(null);
+                                            }}
+                                            className="text-[10px] uppercase tracking-[0.3em] font-black text-black border-b-2 border-black pb-1 hover:opacity-50 transition-all"
+                                        >
+                                            {mode === 'login' ? 'Registrarse' : 'Iniciar Sesión Ahora'}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </motion.div>
                 </motion.div>

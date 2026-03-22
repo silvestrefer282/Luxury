@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { paqueteService, reservacionService, servicioService, menuService, configuracionService } from '../services/api';
-import { Calendar, Users, Info, Star, Shield, ArrowRight, Clock, MapPin, Phone, Utensils, AlertCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Users, Info, Star, Shield, ArrowRight, Clock, MapPin, Phone, Utensils, AlertCircle, X, ChevronLeft, ChevronRight, CheckCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Reservar = () => {
@@ -20,6 +20,7 @@ const Reservar = () => {
     const [isBarFixed, setIsBarFixed] = useState(false);
     const [activeCatIndex, setActiveCatIndex] = useState(0);
     const [errorMsg, setErrorMsg] = useState('');
+    const [showSuccess, setShowSuccess] = useState(false);
 
     const notify = (msg) => {
         setErrorMsg(msg);
@@ -200,8 +201,11 @@ const Reservar = () => {
                 observaciones: `Evento: ${formData.tipo_evento}. Festejado: ${formData.nombre_festejado}. Notas: ${formData.notas}`
             };
             await reservacionService.create(payload);
-            notify("¡Reservación realizada con éxito!");
-            setTimeout(() => navigate('/'), 2000);
+            setShowSuccess(true);
+            setTimeout(() => {
+                setShowSuccess(false);
+                navigate('/');
+            }, 3500);
         } catch (error) {
             console.error(error);
             notify(error.response?.data?.error || "Error al procesar la reserva. Verifica disponibilidad.");
@@ -688,6 +692,35 @@ const Reservar = () => {
             </div>
 
             <Footer />
+
+            {/* Success Reservation Modal */}
+            <AnimatePresence>
+                {showSuccess && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="bg-white rounded-[3rem] p-12 md:p-20 flex flex-col items-center text-center max-w-2xl w-full shadow-[0_0_150px_rgba(0,0,0,0.3)]"
+                        >
+                            <div className="w-24 h-24 bg-black text-white rounded-full flex items-center justify-center mb-8 shadow-2xl">
+                                <CheckCircle size={48} />
+                            </div>
+                            <h3 className="text-4xl md:text-5xl font-serif text-black mb-6 uppercase tracking-tight">¡Reserva <span className="italic font-light">Exitosa</span>!</h3>
+                            <div className="w-12 h-1 bg-black/10 mb-8"></div>
+                            <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-black/40 leading-relaxed mb-10 max-w-sm mx-auto">
+                                Tu evento ha sido registrado y apartado en nuestra agenda. Serás redirigido al inicio en breve...
+                            </p>
+                            <Loader2 className="animate-spin text-black/20" size={28} />
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Premium Toast System */}
             <AnimatePresence>
