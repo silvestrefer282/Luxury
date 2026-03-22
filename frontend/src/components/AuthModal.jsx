@@ -12,6 +12,10 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     const { login } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    
+    // Estado para el checkbox de términos
+    const [aceptaTerminos, setAceptaTerminos] = useState(false);
+
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -28,6 +32,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
             setMode(initialMode);
             setError(null);
             setFormErrors({});
+            setAceptaTerminos(false); // Reiniciar checkbox al abrir
             // Hacer scroll al principio en móviles
             const container = document.getElementById('auth-modal-container');
             if (container) container.scrollTop = 0;
@@ -54,6 +59,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
             return;
         }
 
+        // Validación extra para los términos antes de disparar el loading
+        if (mode === 'register' && !aceptaTerminos) {
+            setError("Debes aceptar los términos y condiciones para continuar.");
+            return;
+        }
+
         setLoading(true);
         setError(null);
 
@@ -68,7 +79,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 if (formData.password !== formData.confirmPassword) {
                     throw new Error('Las contraseñas no coinciden');
                 }
-                response = await authService.registro(formData);
+                
+                // Enviamos los datos incluyendo la confirmación de términos
+                response = await authService.registro({
+                    ...formData,
+                    acepta_terminos: aceptaTerminos
+                });
             }
 
             const { user, token } = response.data;
@@ -91,7 +107,6 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     const renderError = () => {
         if (!error) return null;
 
-        // Si el backend devuelve { "error": "mensaje..." }
         if (error.error) return <span>{String(error.error)}</span>;
 
         if (typeof error === 'object') {
@@ -289,38 +304,60 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                 </div>
 
                                 {mode === 'register' && (
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">Confirmar Contraseña</label>
-                                        <div className="relative border-b border-black/10 focus-within:border-black transition-all pb-3 flex items-center gap-4">
-                                            <Lock size={16} className="text-black/20" />
-                                            <input 
-                                                type={showConfirmPassword ? "text" : "password"} 
-                                                name="confirmPassword"
-                                                value={formData.confirmPassword}
-                                                onChange={handleChange}
-                                                placeholder="Luxury24"
-                                                maxLength="8"
-                                                className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                className="text-black/20 hover:text-black transition-colors flex shrink-0"
-                                            >
-                                                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                            </button>
+                                    <>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] uppercase tracking-widest font-black text-black/60 italic">Confirmar Contraseña</label>
+                                            <div className="relative border-b border-black/10 focus-within:border-black transition-all pb-3 flex items-center gap-4">
+                                                <Lock size={16} className="text-black/20" />
+                                                <input 
+                                                    type={showConfirmPassword ? "text" : "password"} 
+                                                    name="confirmPassword"
+                                                    value={formData.confirmPassword}
+                                                    onChange={handleChange}
+                                                    placeholder="Luxury24"
+                                                    maxLength="8"
+                                                    className="w-full bg-transparent outline-none font-serif text-xl placeholder:text-black/10"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                    className="text-black/20 hover:text-black transition-colors flex shrink-0"
+                                                >
+                                                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                </button>
+                                            </div>
+                                            {formErrors.confirmPassword && (
+                                                <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
+                                                    * {formErrors.confirmPassword}
+                                                </p>
+                                            )}
                                         </div>
-                                        {formErrors.confirmPassword && (
-                                            <p className="text-[9px] uppercase tracking-[0.3em] font-black text-red-700 mt-2">
-                                                * {formErrors.confirmPassword}
-                                            </p>
-                                        )}
-                                    </div>
+
+                                        {/* Sección de Términos y Condiciones */}
+                                        <div className="pt-2">
+                                            <label className="flex items-center gap-3 cursor-pointer group">
+                                                <div className="relative flex items-center justify-center">
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={aceptaTerminos}
+                                                        onChange={(e) => setAceptaTerminos(e.target.checked)}
+                                                        className="peer appearance-none w-4 h-4 border border-black/20 rounded-sm checked:bg-black transition-all"
+                                                    />
+                                                    <div className="absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none">
+                                                        <svg size={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                    </div>
+                                                </div>
+                                                <span className="text-[10px] uppercase tracking-widest font-bold text-black/40 group-hover:text-black transition-colors italic">
+                                                    Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="underline decoration-black/20 underline-offset-4 hover:decoration-black">Términos y Condiciones</a>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </>
                                 )}
 
                                 <button 
                                     type="submit"
-                                    disabled={loading}
+                                    disabled={loading || (mode === 'register' && !aceptaTerminos)}
                                     className="w-full py-8 bg-black text-white text-[11px] uppercase tracking-[0.5em] font-black shadow-2xl hover:bg-black/90 transition-all flex items-center justify-center gap-4 group rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {loading ? (

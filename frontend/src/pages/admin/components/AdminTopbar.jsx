@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, CalendarPlus, Settings } from 'lucide-react';
+import { Search, Plus, CalendarPlus, Settings, Menu } from 'lucide-react';
 
 const AdminTopbar = ({ 
     activeTab, 
@@ -7,7 +7,8 @@ const AdminTopbar = ({
     setSearchTerm, 
     userRole, 
     onAddClick,
-    onSettingsClick 
+    onSettingsClick,
+    onToggleSidebar
 }) => {
     const getTabTitle = () => {
         const item = {
@@ -41,20 +42,29 @@ const AdminTopbar = ({
     };
 
     return (
-        <div className="flex justify-between items-center mb-16 relative">
-            <div>
-                <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-luxury-gray-mid block mb-4 italic">Sirlux Luxury Archive</span>
-                <h2 className="text-6xl font-serif uppercase tracking-tight text-luxury-black">{getTabTitle()}</h2>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-0 mb-8 md:mb-16 relative">
+            <div className="flex items-center gap-4">
+                <button 
+                    className="md:hidden p-2 -ml-2 text-luxury-black" 
+                    onClick={onToggleSidebar}
+                >
+                    <Menu size={28} />
+                </button>
+                <div>
+                    <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-luxury-gray-mid block mb-2 md:mb-4 italic">Sirlux Luxury Archive</span>
+                    <h2 className="text-3xl md:text-6xl font-serif uppercase tracking-tight text-luxury-black">{getTabTitle()}</h2>
+                </div>
             </div>
-            <div className="flex items-center gap-12">
+            
+            <div className="flex flex-wrap items-center gap-4 md:gap-12 w-full md:w-auto mt-4 md:mt-0">
                 {showSearch && (
-                    <div className="relative group">
+                    <div className="relative group w-full md:w-auto">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-luxury-gray-mid group-hover:text-luxury-black transition-colors" size={16} />
                         <input 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder={getSearchPlaceholder()} 
-                            className="bg-luxury-white/50 border-b-2 border-luxury-black/5 py-5 pl-16 pr-8 text-[11px] uppercase tracking-widest font-bold focus:border-luxury-black transition-all outline-none w-96 placeholder:text-luxury-gray-light" 
+                            className="bg-luxury-white/50 border-b-2 border-luxury-black/5 py-4 min-px-2 md:py-5 pl-16 pr-8 text-[11px] uppercase tracking-widest font-bold focus:border-luxury-black transition-all outline-none w-full md:w-96 placeholder:text-luxury-gray-light" 
                         />
                     </div>
                 )}

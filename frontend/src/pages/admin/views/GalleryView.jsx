@@ -10,8 +10,8 @@ const GalleryView = ({
     setIsAddingGallery 
 }) => (
     <div className="animate-in fade-in slide-in-from-right-5 duration-700">
-        <div className="flex justify-end items-center mb-10 border-b border-luxury-black pb-8">
-            <div className="flex gap-4">
+        <div className="flex justify-start md:justify-end items-center mb-10 border-b border-luxury-black pb-8 overflow-x-auto">
+            <div className="flex gap-4 min-w-max pb-2 md:pb-0">
                 {['Todas', 'Montaje', 'Gastronomía', 'Retrato', 'Arquitectura'].map(f => (
                     <button 
                         key={f} 

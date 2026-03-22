@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { paqueteService, reservacionService, servicioService, menuService, configuracionService } from '../services/api';
-import { Calendar, Users, Info, Star, Shield, ArrowRight, Clock, MapPin, Phone, Utensils, AlertCircle, X } from 'lucide-react';
+import { Calendar, Users, Info, Star, Shield, ArrowRight, Clock, MapPin, Phone, Utensils, AlertCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Reservar = () => {
@@ -15,12 +15,16 @@ const Reservar = () => {
     const [categorias, setCategorias] = useState([]);
     const [platillos, setPlatillos] = useState([]);
     const [config, setConfig] = useState(null);
+    const [reservacionesActivas, setReservacionesActivas] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [isBarFixed, setIsBarFixed] = useState(false);
+    const [activeCatIndex, setActiveCatIndex] = useState(0);
     const [errorMsg, setErrorMsg] = useState('');
 
     const notify = (msg) => {
         setErrorMsg(msg);
-        setTimeout(() => setErrorMsg(''), 4000);
+        // Eliminado el temporizador para que el usuario deba cerrarlo manualmente
+        // setTimeout(() => setErrorMsg(''), 4000); 
     };
 
     const [formData, setFormData] = useState({
@@ -42,18 +46,20 @@ const Reservar = () => {
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const [pkgs, svcs, cats, plates, cfg] = await Promise.all([
+                const [pkgs, svcs, cats, plates, cfg, reservas] = await Promise.all([
                     paqueteService.getAll(),
                     servicioService.getAll(),
                     menuService.getCategorias(),
                     menuService.getPlatillos(),
-                    configuracionService.getCurrent()
+                    configuracionService.getCurrent(),
+                    reservacionService.getPublicCalendar()
                 ]);
                 setPaquetes(pkgs.data);
                 setServicios(svcs.data);
                 setCategorias(cats.data);
                 setPlatillos(plates.data);
                 setConfig(cfg.data);
+                setReservacionesActivas(reservas.data);
             } catch (err) {
                 console.error("Error loading reservation data:", err);
             }
@@ -63,6 +69,16 @@ const Reservar = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+        
+        if (name === 'fecha_evento') {
+            const isBooked = reservacionesActivas.some(r => r.fecha === value);
+            if (isBooked) {
+                notify("Esta fecha ya se encuentra reservada. Por favor, selecciona otro día.");
+                setFormData(prev => ({ ...prev, [name]: '' }));
+                return;
+            }
+        }
+        
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -132,13 +148,27 @@ const Reservar = () => {
             const totalDuration = (pkg?.duracion_horas || 0) + (formData.horas_adicionales || 0);
             
             const [sh, sm] = start.split(':').map(Number);
-            const startTotal = sh * 60 + sm;
+            let startTotal = sh * 60 + sm;
             
             const [ah, am] = config.hora_apertura.split(':').map(Number);
             const apertureTotal = ah * 60 + am;
             
-            const [ch, cm] = config.hora_cierre.split(':').map(Number);
-            const closureTotal = ch * 60 + cm;
+            let [ch, cm] = config.hora_cierre.split(':').map(Number);
+            
+            // Fix mistaken 12:00 PM configuration for midnight
+            if (ch === 12 && cm === 0 && ah >= 6) {
+                ch = 0;
+            }
+            
+            let closureTotal = ch * 60 + cm;
+            
+            if (closureTotal <= apertureTotal) {
+                closureTotal += 1440;
+            }
+            
+            if (startTotal < apertureTotal) {
+                startTotal += 1440;
+            }
             
             const endTotal = startTotal + (totalDuration * 60);
 
@@ -180,8 +210,8 @@ const Reservar = () => {
         }
     };
 
-    const selectedPkg = paquetes.find(p => p.id === formData.paquete);
-    const selectedServices = servicios.filter(s => formData.servicios_adicionales.includes(s.id));
+    const selectedPkg = paquetes.find(p => p.id == formData.paquete);
+    const selectedServices = servicios.filter(s => formData.servicios_adicionales.some(id => id == s.id));
     
     const extraHoursCost = (formData.horas_adicionales || 0) * (Number(selectedPkg?.precio_hora_adicional) || 0);
     const totalPrice = (Number(selectedPkg?.precio_base) || 0) + extraHoursCost + selectedServices.reduce((sum, s) => sum + Number(s.precio_unitario || 0), 0);
@@ -210,14 +240,31 @@ const Reservar = () => {
     const getAvailableHours = () => {
         if (!config || !selectedPkg) return [];
         const hours = [];
+        
         const [ah, am] = config.hora_apertura.split(':').map(Number);
-        const [ch, cm] = config.hora_cierre.split(':').map(Number);
-        const apertureMin = ah * 60 + am;
-        const closureMin = ch * 60 + cm;
-        const totalDuration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
+        let [ch, cm] = config.hora_cierre.split(':').map(Number);
+        
+        // Fix mistaken 12:00 PM configuration for midnight
+        if (ch === 12 && cm === 0 && ah >= 6) {
+            ch = 0;
+        }
+        
+        let apertureMin = ah * 60 + am;
+        let closureMin = ch * 60 + cm;
+        
+        // Soporte para horarios que cruzan la medianoche
+        if (closureMin <= apertureMin) {
+            closureMin += 1440;
+        }
 
-        for (let t = apertureMin; t <= closureMin - (totalDuration * 60); t += 30) {
-            const h = Math.floor(t / 60);
+        const totalDuration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
+        const cleaning = Number(config.hora_limpieza) || 0;
+        
+        // El evento debe terminar + limpieza antes o igual al cierre
+        const startLimit = closureMin - (totalDuration * 60);
+
+        for (let t = apertureMin; t <= startLimit; t += 30) {
+            const h = Math.floor(t / 60) % 24;
             const m = t % 60;
             const time24 = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
             hours.push({
@@ -230,12 +277,132 @@ const Reservar = () => {
 
     const availableHours = getAvailableHours();
 
+    // Efecto para ajustar la hora de inicio si la actual deja de ser válida
+    useEffect(() => {
+        if (availableHours.length > 0) {
+            const isCurrentValid = availableHours.some(h => h.value === formData.hora_inicio);
+            if (!isCurrentValid && formData.hora_inicio) {
+                // ALERTA: Notificar que la duración excedió el límite para la hora actual
+                notify(`Al añadir tiempo extra, el evento terminaría después del cierre del salón (${format12h(config.hora_cierre)}). Por favor ajusta la hora de inicio o las horas adicionales.`);
+                
+                // Si la hora por defecto (14:00) o la seleccionada no es válida, 
+                // tomamos la primera disponible o una cercana a la tarde si es posible
+                const preferred = availableHours.find(h => h.value === '14:00') || availableHours[0];
+                setFormData(prev => ({ ...prev, hora_inicio: preferred.value }));
+            }
+        } else if (selectedPkg && config && (formData.fecha_evento || formData.tipo_evento)) {
+            // ALERTA: El paquete completo es físicamente imposible para el horario del salón
+            const duration = selectedPkg.duracion_horas + formData.horas_adicionales;
+            notify(`Atención: El paquete seleccionado con tiempo extra (${duration}h) excede el horario total de operación del salón (${format12h(config.hora_apertura)} a ${format12h(config.hora_cierre)}).`);
+        }
+    }, [availableHours, formData.hora_inicio, selectedPkg, config, formData.horas_adicionales, formData.fecha_evento, formData.tipo_evento]);
+
+    // EFECTO: Sincronizar hora_fin automáticamente en el formData
+    useEffect(() => {
+        if (formData.hora_inicio && selectedPkg) {
+            const [h, m] = formData.hora_inicio.split(':').map(Number);
+            const totalDuration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
+            const endH = (h + totalDuration) % 24;
+            const time24 = `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+            
+            if (formData.hora_fin !== time24) {
+                setFormData(prev => ({ ...prev, hora_fin: time24 }));
+            }
+        }
+    }, [formData.hora_inicio, formData.horas_adicionales, selectedPkg, formData.hora_fin]);
+
+    const renderSummaryPanel = () => (
+        <motion.div 
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-[#1a1a1a] text-white p-10 rounded-[40px] shadow-2xl space-y-10 w-full"
+        >
+            <div className="border-b border-white/10 pb-8">
+                <h4 className="text-[10px] uppercase tracking-[0.5em] font-black text-white/40 mb-2">Resumen de Selección</h4>
+                <div className="text-3xl font-serif italic mb-2">Tu Evento</div>
+                <div className="text-[10px] uppercase tracking-widest text-white/60">
+                    {formData.fecha_evento || 'Sin fecha'} • {startTimeFormatted} - {endTimeFormatted}
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                {selectedPkg ? (
+                    <div className="flex justify-between items-start gap-4">
+                        <div className="space-y-1">
+                            <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Paquete</p>
+                            <p className="text-sm font-bold tracking-tighter uppercase">{selectedPkg.nombre}</p>
+                        </div>
+                        <span className="text-sm font-light tracking-tighter text-white/60">${Number(selectedPkg.precio_base).toLocaleString()}</span>
+                    </div>
+                ) : (
+                    <p className="text-[10px] uppercase tracking-widest text-white/20 italic">No se ha seleccionado paquete...</p>
+                )}
+
+                {formData.horas_adicionales > 0 && selectedPkg && (
+                    <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                        <div className="space-y-1">
+                            <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Tiempo Extra</p>
+                            <p className="text-[11px] font-bold uppercase">{formData.horas_adicionales} {formData.horas_adicionales === 1 ? 'Hora' : 'Horas'}</p>
+                        </div>
+                        <span className="text-[11px] text-white/60">+ ${extraHoursCost.toLocaleString()}</span>
+                    </div>
+                )}
+
+                {formData.platillos_seleccionados.length > 0 && (
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                        <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Menú Seleccionado</p>
+                        <div className="space-y-2">
+                            {formData.platillos_seleccionados.map(pId => {
+                                const p = platillos.find(item => item.id === pId);
+                                return p ? (
+                                    <div key={pId} className="flex items-center gap-3">
+                                        <div className="w-1 h-1 bg-white/20 rounded-full"></div>
+                                        <span className="text-[10px] uppercase tracking-wider text-white/80">{p.nombre}</span>
+                                    </div>
+                                ) : null;
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {selectedServices.length > 0 && (
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                        <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Adicionales Luxury</p>
+                        <div className="space-y-3">
+                            {selectedServices.map(s => (
+                                <div key={s.id} className="flex justify-between items-center">
+                                    <span className="text-[10px] uppercase tracking-wider text-white/80">{s.nombre}</span>
+                                    <span className="text-[10px] text-white/40">${Number(s.precio_unitario).toLocaleString()}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="pt-8 border-t-2 border-white/10">
+                <div className="flex justify-between items-baseline mb-2">
+                    <span className="text-[10px] uppercase tracking-[0.3em] font-black text-white/40 leading-none">Inversión Total</span>
+                    <span className="text-4xl font-serif italic text-white leading-none">${totalPrice.toLocaleString()}</span>
+                </div>
+                <p className="text-[8px] uppercase tracking-widest text-white/20">Sujeto a cambios según disponibilidad de fecha y extras.</p>
+            </div>
+
+            <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
+                <div className="flex items-center gap-4 text-white/60">
+                    <Shield size={16} />
+                    <p className="text-[9px] uppercase tracking-widest leading-loose">Protegido por el acuerdo de exclusividad SIR LUXURY</p>
+                </div>
+            </div>
+        </motion.div>
+    );
+
     return (
         <div style={{ background: '#f8fafc', minHeight: '100vh', scrollBehavior: 'smooth' }}>
             <Navbar />
 
-            <div className="container" style={{ padding: '8rem 0 6rem' }}>
-                <div className="flex flex-col lg:flex-row gap-12 relative items-start">
+            <div className="container mx-auto px-4 md:px-8 py-32 md:py-40">
+                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 relative items-start">
                     
                     {/* LEFT: FORM STEPS */}
                     <motion.div
@@ -343,7 +510,7 @@ const Reservar = () => {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Calendario</label>
-                                        <input type="date" name="fecha_evento" value={formData.fecha_evento} onChange={handleChange} required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" />
+                                        <input type="date" name="fecha_evento" value={formData.fecha_evento} min={new Date().toISOString().split('T')[0]} onChange={handleChange} required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Hora de Inicio</label>
@@ -354,7 +521,7 @@ const Reservar = () => {
                                             required 
                                             className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black appearance-none cursor-pointer"
                                         >
-                                            <option value="">Selecciona...</option>
+                                            <option value="">{availableHours.length === 0 && selectedPkg ? 'No hay horarios disponibles (Paquete muy largo)' : 'Selecciona...'}</option>
                                             {availableHours.map(h => (
                                                 <option key={h.value} value={h.value}>{h.label}</option>
                                             ))}
@@ -386,41 +553,70 @@ const Reservar = () => {
                                 </div>
                             </section>
 
-                             {/* 3. Selección de Menú */}
+                            {/* 3. Selección de Menú */}
                             {selectedPkg && selectedPkg.incluye_menu && (
                                 <section id="step3" className="space-y-16">
                                     <div className="flex flex-col items-center text-center gap-4">
                                         <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">03</span>
                                         <h3 className="font-serif text-4xl uppercase tracking-tight">Curaduría Gourmet</h3>
                                     </div>
-                                    <div className="space-y-16">
-                                        {categorias.map(cat => (
-                                            <div key={cat.id}>
-                                                <h4 className="flex items-center gap-6 mb-10">
-                                                    <div className="h-[1px] bg-gray-100 flex-1"></div>
-                                                    <span className="text-[10px] uppercase tracking-[0.5em] font-black text-gray-400">{cat.nombre}</span>
-                                                    <div className="h-[1px] bg-gray-100 flex-1"></div>
-                                                </h4>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                                    {platillos.filter(p => p.categoria === cat.id).map(p => {
-                                                        const isSelected = formData.platillos_seleccionados.includes(p.id);
-                                                        return (
-                                                            <div 
-                                                                key={p.id} 
-                                                                onClick={() => handlePlatilloToggle(p.id)}
-                                                                className={`cursor-pointer transition-all p-4 rounded-2xl border-2 flex items-center gap-4 ${isSelected ? 'border-black bg-white shadow-xl px-6 scale-[1.02]' : 'border-white bg-white hover:border-gray-100'}`}
-                                                            >
-                                                                <div className={`w-14 h-14 rounded-full overflow-hidden border ${isSelected ? 'border-black' : 'border-gray-50'}`}>
-                                                                    {p.imagen && <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover" />}
-                                                                </div>
-                                                                <span className={`text-xs font-bold uppercase tracking-widest ${isSelected ? 'text-black' : 'text-gray-500'}`}>{p.nombre}</span>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ))}
+
+                                    {/* Category Navigator for Menu Selection */}
+                                    <div className="bg-white p-6 rounded-full border border-gray-100 shadow-sm flex items-center justify-between mb-12">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setActiveCatIndex(Math.max(0, activeCatIndex - 1))}
+                                            disabled={activeCatIndex === 0}
+                                            className={`flex items-center gap-2 p-2 px-6 rounded-full transition-all text-[10px] font-black uppercase tracking-widest ${activeCatIndex === 0 ? 'opacity-20 grayscale' : 'hover:bg-gray-50 text-black'}`}
+                                        >
+                                            <ChevronLeft size={16} /> Anterior
+                                        </button>
+
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-[9px] uppercase tracking-[0.4em] text-gray-400 font-bold mb-1">Categoría {activeCatIndex + 1} de {categorias.length}</span>
+                                            <h4 className="font-serif text-2xl italic text-black">{categorias[activeCatIndex]?.nombre}</h4>
+                                        </div>
+
+                                        <button 
+                                            type="button"
+                                            onClick={() => setActiveCatIndex(Math.min(categorias.length - 1, activeCatIndex + 1))}
+                                            disabled={activeCatIndex === categorias.length - 1}
+                                            className={`flex items-center gap-2 p-2 px-6 rounded-full transition-all text-[10px] font-black uppercase tracking-widest ${activeCatIndex === categorias.length - 1 ? 'opacity-20 grayscale' : 'hover:bg-gray-50 text-black'}`}
+                                        >
+                                            Siguiente <ChevronRight size={16} />
+                                        </button>
                                     </div>
+
+                                    <AnimatePresence mode="wait">
+                                        <motion.div 
+                                            key={activeCatIndex}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+                                        >
+                                            {platillos.filter(p => p.categoria === categorias[activeCatIndex]?.id).map(p => {
+                                                const isSelected = formData.platillos_seleccionados.includes(p.id);
+                                                return (
+                                                    <motion.div 
+                                                        key={p.id} 
+                                                        whileTap={{ scale: 0.98 }}
+                                                        onClick={() => handlePlatilloToggle(p.id)}
+                                                        className={`cursor-pointer transition-all p-6 rounded-[32px] border-2 flex items-center gap-6 ${isSelected ? 'border-black bg-white shadow-xl scale-[1.02]' : 'border-white bg-white hover:border-gray-100'}`}
+                                                    >
+                                                        <div className={`w-16 h-16 rounded-full overflow-hidden border-2 shadow-inner ${isSelected ? 'border-black' : 'border-gray-50'}`}>
+                                                            {p.imagen && <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover" />}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className={`text-[11px] font-black uppercase tracking-widest leading-tight ${isSelected ? 'text-black' : 'text-gray-500'}`}>{p.nombre}</p>
+                                                            {isSelected && <p className="text-[10px] text-gray-400 mt-1 font-serif italic">Seleccionado</p>}
+                                                        </div>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </motion.div>
+                                    </AnimatePresence>
                                 </section>
                             )}
 
@@ -466,8 +662,13 @@ const Reservar = () => {
                                 ></textarea>
                             </section>
 
+                            {/* Panel Summary en Móvil */}
+                            <div className="lg:hidden w-full mt-12 pb-4">
+                                {renderSummaryPanel()}
+                            </div>
+
                             {/* 6. Submit */}
-                            <div className="pt-20">
+                            <div className="pt-10 md:pt-20">
                                 <button
                                     type="submit"
                                     disabled={loading}
@@ -481,93 +682,7 @@ const Reservar = () => {
 
                     {/* RIGHT: STICKY SUMMARY PANEL */}
                     <div className="lg:w-[380px] sticky top-[10rem] hidden lg:block">
-                        <motion.div 
-                            initial={{ opacity: 0, x: 30 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="bg-[#1a1a1a] text-white p-10 rounded-[40px] shadow-2xl space-y-10"
-                        >
-                            <div className="border-b border-white/10 pb-8">
-                                <h4 className="text-[10px] uppercase tracking-[0.5em] font-black text-white/40 mb-2">Resumen de Selección</h4>
-                                <div className="text-3xl font-serif italic mb-2">Tu Evento</div>
-                                <div className="text-[10px] uppercase tracking-widest text-white/60">
-                                    {formData.fecha_evento || 'Sin fecha'} • {startTimeFormatted} - {endTimeFormatted}
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                {/* Paquete */}
-                                {selectedPkg ? (
-                                    <div className="flex justify-between items-start gap-4">
-                                        <div className="space-y-1">
-                                            <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Paquete</p>
-                                            <p className="text-sm font-bold tracking-tighter uppercase">{selectedPkg.nombre}</p>
-                                        </div>
-                                        <span className="text-sm font-light tracking-tighter text-white/60">${Number(selectedPkg.precio_base).toLocaleString()}</span>
-                                    </div>
-                                ) : (
-                                    <p className="text-[10px] uppercase tracking-widest text-white/20 italic">No se ha seleccionado paquete...</p>
-                                )}
-
-                                {/* Horas Adicionales Resumen */}
-                                {formData.horas_adicionales > 0 && selectedPkg && (
-                                    <div className="flex justify-between items-center pt-4 border-t border-white/5">
-                                        <div className="space-y-1">
-                                            <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Tiempo Extra</p>
-                                            <p className="text-[11px] font-bold uppercase">{formData.horas_adicionales} {formData.horas_adicionales === 1 ? 'Hora' : 'Horas'}</p>
-                                        </div>
-                                        <span className="text-[11px] text-white/60">+ ${extraHoursCost.toLocaleString()}</span>
-                                    </div>
-                                )}
-
-                                {/* Comida seleccionada */}
-                                {formData.platillos_seleccionados.length > 0 && (
-                                    <div className="space-y-4 pt-4 border-t border-white/5">
-                                        <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Menú Seleccionado</p>
-                                        <div className="space-y-2">
-                                            {formData.platillos_seleccionados.map(pId => {
-                                                const p = platillos.find(item => item.id === pId);
-                                                return p ? (
-                                                    <div key={pId} className="flex items-center gap-3">
-                                                        <div className="w-1 h-1 bg-white/20 rounded-full"></div>
-                                                        <span className="text-[10px] uppercase tracking-wider text-white/80">{p.nombre}</span>
-                                                    </div>
-                                                ) : null;
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Adicionales */}
-                                {selectedServices.length > 0 && (
-                                    <div className="space-y-4 pt-4 border-t border-white/5">
-                                        <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Adicionales Luxury</p>
-                                        <div className="space-y-3">
-                                            {selectedServices.map(s => (
-                                                <div key={s.id} className="flex justify-between items-center">
-                                                    <span className="text-[10px] uppercase tracking-wider text-white/80">{s.nombre}</span>
-                                                    <span className="text-[10px] text-white/40">${Number(s.precio_unitario).toLocaleString()}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="pt-8 border-t-2 border-white/10">
-                                <div className="flex justify-between items-baseline mb-2">
-                                    <span className="text-[10px] uppercase tracking-[0.3em] font-black text-white/40 leading-none">Inversión Total</span>
-                                    <span className="text-4xl font-serif italic text-white leading-none">${totalPrice.toLocaleString()}</span>
-                                </div>
-                                <p className="text-[8px] uppercase tracking-widest text-white/20">Sujeto a cambios según disponibilidad de fecha y extras.</p>
-                            </div>
-
-                            <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
-                                <div className="flex items-center gap-4 text-white/60">
-                                    <Shield size={16} />
-                                    <p className="text-[9px] uppercase tracking-widest leading-loose">Protegido por el acuerdo de exclusividad SIR LUXURY</p>
-                                </div>
-                            </div>
-                        </motion.div>
+                        {renderSummaryPanel()}
                     </div>
                 </div>
             </div>

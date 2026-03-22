@@ -13,8 +13,6 @@ const MenuCategoryModal = ({
     handleRemoveItem
 }) => {
     const [newItemName, setNewItemName] = useState('');
-    const [newItemDesc, setNewItemDesc] = useState('');
-    const [newItemFile, setNewItemFile] = useState(null);
     const [categoryDesc, setCategoryDesc] = useState(menus[category]?.descripcion || '');
 
     if (!isOpen) return null;
@@ -25,15 +23,11 @@ const MenuCategoryModal = ({
             const formData = new FormData();
             formData.append('categoria', catId);
             formData.append('nombre', newItemName);
-            formData.append('descripcion', newItemDesc);
-            if (newItemFile) formData.append('imagen', newItemFile);
 
             try {
                 await menuService.createPlatillo(formData);
                 fetchData();
                 setNewItemName('');
-                setNewItemDesc('');
-                setNewItemFile(null);
             } catch (error) {
                 console.error("Error adding item:", error);
             }
@@ -55,29 +49,43 @@ const MenuCategoryModal = ({
                     </button>
 
                     <span className="text-[12px] uppercase tracking-[0.8em] font-bold text-luxury-gray-mid block mb-6 px-1 border-l-4 border-luxury-black">Architecture Gastronomique</span>
-                    <div className="flex items-center gap-8 mb-20 group/title">
-                        <h2 className="text-7xl font-serif uppercase tracking-tight text-luxury-black">Sección</h2>
-                        <input 
-                            defaultValue={category}
-                            onBlur={(e) => handleRenameCategory(category, e.target.value)}
-                            className="text-7xl font-serif italic font-light text-luxury-gray-mid bg-transparent border-none outline-none focus:text-luxury-black transition-colors"
-                        />
-                        <Edit3 size={14} className="text-luxury-gray-mid opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                    <div className="flex flex-col gap-8 mb-20 group/title">
+                        <div className="flex flex-col gap-4">
+                            <h2 className="text-7xl font-serif uppercase tracking-tight text-luxury-black">Sección</h2>
+                            <div className="flex items-center gap-6">
+                                <label className="cursor-pointer bg-luxury-black text-luxury-white px-6 py-3 text-[10px] uppercase tracking-widest font-bold hover:bg-luxury-gray-dark transition-all flex items-center gap-3">
+                                    <ImageIcon size={14} />
+                                    {menus[category]?.imagen ? 'Cambiar Imagen Principal' : 'Agregar Imagen Principal'}
+                                    <input 
+                                        type="file" 
+                                        className="hidden" 
+                                        onChange={async (e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                const catId = menus[category]?.id;
+                                                const formData = new FormData();
+                                                formData.append('imagen', file);
+                                                await menuService.updateCategoria(catId, formData);
+                                                fetchData();
+                                            }
+                                        }}
+                                    />
+                                </label>
+                                {menus[category]?.imagen && (
+                                    <span className="text-[9px] uppercase tracking-widest text-green-600 font-bold">Imagen Cargada</span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                            <input 
+                                defaultValue={category}
+                                onBlur={(e) => handleRenameCategory(category, e.target.value)}
+                                className="text-7xl font-serif italic font-light text-luxury-gray-mid bg-transparent border-none outline-none focus:text-luxury-black transition-colors"
+                            />
+                            <Edit3 size={14} className="text-luxury-gray-mid opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                        </div>
                     </div>
 
-                    <div className="mb-20 space-y-4">
-                        <label className="text-[11px] uppercase tracking-[0.4em] font-bold text-luxury-gray-mid block italic">Descripción de la Sección</label>
-                        <textarea 
-                            value={categoryDesc}
-                            onChange={(e) => setCategoryDesc(e.target.value)}
-                            onBlur={() => {
-                                const catId = menus[category]?.id;
-                                if (catId) menuService.updateCategoria(catId, { descripcion: categoryDesc }).then(() => fetchData());
-                            }}
-                            className="w-full bg-transparent border-b border-luxury-black/10 py-4 font-serif text-xl italic outline-none focus:border-luxury-black transition-all"
-                            placeholder="Subtítulo o descripción corta para esta categoría..."
-                        />
-                    </div>
 
                     <div className="space-y-16">
                         <div className="space-y-8">
@@ -86,11 +94,6 @@ const MenuCategoryModal = ({
                                 {menus[category]?.items?.map((item, i) => (
                                     <div key={item.id} className="group relative flex items-center border-b border-luxury-black/10 pb-6 hover:border-luxury-black transition-all">
                                         <span className="text-2xl font-serif text-luxury-black opacity-10 mr-10 italic">{i < 9 ? `0${i + 1}` : i + 1}</span>
-                                        {item.imagen && (
-                                            <div className="w-12 h-12 bg-luxury-white border border-luxury-black/5 overflow-hidden mr-6 flex-shrink-0 grayscale group-hover:grayscale-0 transition-all">
-                                                <img src={item.imagen} alt={item.nombre} className="w-full h-full object-cover" />
-                                            </div>
-                                        )}
                                         <input
                                             value={item.nombre}
                                             readOnly
@@ -115,22 +118,7 @@ const MenuCategoryModal = ({
                                     value={newItemName}
                                     onChange={(e) => setNewItemName(e.target.value)}
                                 />
-                                <div className="relative flex items-center px-6 border-l border-luxury-black/10">
-                                    <input 
-                                        type="file" 
-                                        onChange={(e) => setNewItemFile(e.target.files[0])}
-                                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                    />
-                                    <ImageIcon className={`transition-colors ${newItemFile ? 'text-luxury-black' : 'text-luxury-gray-mid opacity-30'}`} size={20} />
-                                </div>
                             </div>
-                            <textarea 
-                                placeholder="Descripción o ingredientes del platillo..."
-                                className="w-full bg-transparent p-4 font-serif text-xl italic outline-none border border-transparent focus:border-luxury-black/10 transition-all resize-none"
-                                rows="2"
-                                value={newItemDesc}
-                                onChange={(e) => setNewItemDesc(e.target.value)}
-                            />
                             <button
                                 onClick={() => handleAddItem(category)}
                                 className="w-full py-8 bg-luxury-black text-luxury-white text-[12px] uppercase tracking-[0.5em] font-bold hover:bg-luxury-gray-dark transition-all"

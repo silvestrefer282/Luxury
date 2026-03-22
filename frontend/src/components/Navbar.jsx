@@ -53,11 +53,13 @@ const Navbar = () => {
                 : 'bg-white py-6 border-b border-black/5'
                 }`}>
                 <div className="max-w-[1600px] mx-auto flex justify-between items-center">
+                    
+                    {/* 🔥 LOGO AGRANDADO */}
                     <Link to="/" className="no-underline group">
                         <img
                             src="/images/logo.png"
                             alt="LUXURY Salón Social"
-                            className="h-10 w-auto object-contain transition-opacity duration-300 group-hover:opacity-80"
+                            className="h-14 md:h-16 w-auto object-contain transition-all duration-300 group-hover:opacity-80"
                             style={{ filter: 'brightness(0)' }}
                         />
                     </Link>
@@ -110,7 +112,6 @@ const Navbar = () => {
                                     <ChevronDown size={12} className="group-hover/user:rotate-180 transition-transform" />
                                 </div>
                                 
-                                {/* Dropdown */}
                                 <div className="absolute top-full right-0 mt-4 w-56 bg-white shadow-2xl border border-black/5 py-4 opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all rounded-2xl">
                                     <Link to="/mis-reservas" className="block px-8 py-4 text-[10px] uppercase tracking-widest font-bold text-black/60 hover:text-black hover:bg-black/5 no-underline">Mis Reservas</Link>
                                     
@@ -153,8 +154,9 @@ const Navbar = () => {
                                         key={link.name}
                                         to={link.path}
                                         onClick={(e) => handleNavLinkClick(e, link)}
-                                        className={`text-3xl font-serif font-light tracking-tight ${location.pathname === link.path ? 'text-black font-medium italic' : 'text-black/40'
-                                            }`}
+                                        className={`text-3xl font-serif font-light tracking-tight ${
+                                            location.pathname === link.path ? 'text-black font-medium italic' : 'text-black/40'
+                                        }`}
                                     >
                                         {link.name}
                                     </Link>
@@ -183,15 +185,54 @@ const Navbar = () => {
                                         </button>
                                     </div>
                                 ) : (
-                                    <button 
-                                        onClick={() => {
-                                            setIsMobileMenuOpen(false);
-                                            logout();
-                                        }}
-                                        className="py-5 text-red-600 text-[10px] uppercase tracking-widest font-bold border border-red-100 rounded-xl"
-                                    >
-                                        Cerrar Sesión
-                                    </button>
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex items-center gap-4 py-4 px-2 border-b border-black/5">
+                                            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-sm text-white font-bold">
+                                                {user.username.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <span className="text-sm font-bold block">{user.first_name}</span>
+                                                <span className="text-[10px] uppercase tracking-widest text-black/50">{user.rol}</span>
+                                            </div>
+                                        </div>
+                                        <Link 
+                                            to="/mis-reservas" 
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="py-4 px-4 text-[11px] uppercase tracking-widest font-bold hover:bg-black/5 rounded-xl no-underline text-black/70"
+                                        >
+                                            Mis Reservas
+                                        </Link>
+                                        
+                                        {user.rol === 'Administrador' && (
+                                            <Link 
+                                                to="/admin" 
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className="py-4 px-4 text-[11px] uppercase tracking-widest font-bold hover:bg-black/5 rounded-xl no-underline text-black/70"
+                                            >
+                                                Dashboard Admin
+                                            </Link>
+                                        )}
+                                        
+                                        {user.rol === 'Encargado' && (
+                                            <Link 
+                                                to="/encargado" 
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className="py-4 px-4 text-[11px] uppercase tracking-widest font-bold hover:bg-black/5 rounded-xl no-underline text-black/70"
+                                            >
+                                                Panel Encargado
+                                            </Link>
+                                        )}
+                                        
+                                        <button 
+                                            onClick={() => {
+                                                setIsMobileMenuOpen(false);
+                                                logout();
+                                            }}
+                                            className="mt-4 py-5 text-red-600 text-[10px] uppercase tracking-widest font-bold border border-red-100 rounded-xl hover:bg-red-50"
+                                        >
+                                            Cerrar Sesión
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </motion.div>

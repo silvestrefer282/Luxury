@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AnimatePresence } from 'framer-motion';
@@ -15,10 +15,20 @@ import Menus from './pages/Menus';
 import Disponibilidad from './pages/Disponibilidad';
 import MisReservas from './pages/MisReservas';
 
+// Redirección PDF
+const TerminosPDF = () => {
+  useEffect(() => {
+    window.location.href = '/terminos.pdf';
+  }, []);
+  return null;
+};
+
+// Protección de rutas
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
 
   if (!user) return <Navigate to="/" />;
+
   if (allowedRoles && !allowedRoles.includes(user.rol)) {
     return <Navigate to="/" />;
   }
@@ -28,9 +38,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 const AnimatedRoutes = () => {
   const location = useLocation();
+
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
+
         <Route path="/" element={<Home />} />
         <Route path="/catalogar" element={<Paquetes />} />
         <Route path="/servicios" element={<ServiciosPage />} />
@@ -38,26 +50,26 @@ const AnimatedRoutes = () => {
         <Route path="/menus" element={<Menus />} />
         <Route path="/disponibilidad" element={<Disponibilidad />} />
 
-        {/* Rutas Cliente / Staff */}
+        <Route path="/terminos" element={<TerminosPDF />} />
+
         <Route path="/reservar" element={
           <ProtectedRoute allowedRoles={['Cliente', 'Administrador', 'Encargado']}>
             <Reservar />
           </ProtectedRoute>
         } />
+
         <Route path="/mis-reservas" element={
           <ProtectedRoute allowedRoles={['Cliente', 'Administrador', 'Encargado']}>
             <MisReservas />
           </ProtectedRoute>
         } />
 
-        {/* Rutas Admin */}
         <Route path="/admin" element={
           <ProtectedRoute allowedRoles={['Administrador']}>
             <AdminDashboard />
           </ProtectedRoute>
         } />
 
-        {/* Rutas Encargado */}
         <Route path="/encargado" element={
           <ProtectedRoute allowedRoles={['Encargado', 'Administrador']}>
             <EncargadoReservas />
@@ -65,6 +77,7 @@ const AnimatedRoutes = () => {
         } />
 
         <Route path="*" element={<Navigate to="/" />} />
+
       </Routes>
     </AnimatePresence>
   );

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 // Hooks
@@ -35,6 +35,7 @@ import UserModal from './admin/modals/UserModal';
 const AdminDashboard = () => {
     const { logout } = useAuth();
     const dashboard = useAdminDashboard();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const renderActiveView = () => {
         switch (dashboard.activeTab) {
@@ -43,6 +44,7 @@ const AdminDashboard = () => {
                 <ReservationsView 
                     {...dashboard} 
                     setSelectedReservationForContract={dashboard.setSelectedReservationForContract}
+                    triggerAlert={dashboard.triggerAlert}
                 />
             );
             case 'packages': return <PackagesView {...dashboard} />;
@@ -70,14 +72,17 @@ const AdminDashboard = () => {
                 setActiveTab={dashboard.setActiveTab} 
                 userRole={dashboard.userRole}
                 onLogout={logout}
+                isOpen={isSidebarOpen}
+                setIsOpen={setIsSidebarOpen}
             />
 
-            <main className="flex-1 ml-80 p-16 custom-scrollbar h-screen overflow-y-auto bg-[#fafafa]">
+            <main className="flex-1 ml-0 md:ml-80 p-6 md:p-16 custom-scrollbar h-screen overflow-y-auto bg-[#fafafa]">
                 <AdminTopbar 
                     activeTab={dashboard.activeTab}
                     searchTerm={dashboard.searchTerm}
                     setSearchTerm={dashboard.setSearchTerm}
                     userRole={dashboard.userRole}
+                    onToggleSidebar={() => setIsSidebarOpen(true)}
                     onAddClick={() => {
                         if (dashboard.activeTab === 'packages') {
                             dashboard.resetPackageForm();
@@ -194,6 +199,7 @@ const AdminDashboard = () => {
                 contractForm={dashboard.contractForm}
                 setContractForm={dashboard.setContractForm}
                 handleCreateContract={dashboard.handleCreateContract}
+                triggerAlert={dashboard.triggerAlert}
             />
 
             {dashboard.selectedContractForPayments && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // ✅ agregado
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { reservacionService } from '../services/api';
@@ -10,6 +11,9 @@ const today = new Date();
 today.setHours(0, 0, 0, 0);
 
 const Disponibilidad = () => {
+
+    const navigate = useNavigate(); // ✅ agregado
+
     const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
     const [bookedDates, setBookedDates] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,7 +23,7 @@ const Disponibilidad = () => {
         const fetchReservations = async () => {
             setLoading(true);
             try {
-                const response = await reservacionService.getAll();
+                const response = await reservacionService.getPublicCalendar();
                 const mapped = response.data
                     .filter(res => res.estado !== 'Cancelada')
                     .map(res => {
@@ -172,80 +176,61 @@ const Disponibilidad = () => {
                     </div>
                 </div>
 
-                {/* Single Month View with Navigation */}
+                {/* Calendar */}
                 <div className="bg-white border-t border-l border-black/10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] overflow-hidden">
-                    {/* Navigation */}
                     <div className="flex justify-between items-center p-12 border-b border-black/5 bg-white relative z-20">
                         <button 
                             onClick={handlePrevMonth} 
-                            className={`w-14 h-14 flex items-center justify-center transition-all border border-black/5 rounded-full ${
-                                currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear()
-                                ? 'opacity-0 pointer-events-none' 
-                                : 'hover:bg-black hover:text-white cursor-pointer'
-                            }`}
+                            className="w-14 h-14 flex items-center justify-center transition-all border border-black/5 rounded-full hover:bg-black hover:text-white"
                         >
                             <ChevronLeft size={20} />
                         </button>
-                        <AnimatePresence mode="wait" custom={direction}>
-                            <motion.h2 
-                                key={currentDate.getMonth()}
-                                custom={direction}
-                                variants={variants}
-                                initial="enter"
-                                animate="center"
-                                exit="exit"
-                                transition={{ type: 'spring', damping: 80, stiffness: 1000 }}
-                                className="text-5xl font-serif uppercase tracking-widest italic"
-                            >
-                                {monthNames[currentDate.getMonth()]} <span className="not-italic font-light opacity-30">{currentDate.getFullYear()}</span>
-                            </motion.h2>
-                        </AnimatePresence>
+
+                        <motion.h2 className="text-5xl font-serif uppercase tracking-widest italic">
+                            {monthNames[currentDate.getMonth()]} <span className="not-italic font-light opacity-30">{currentDate.getFullYear()}</span>
+                        </motion.h2>
+
                         <button onClick={handleNextMonth} className="w-14 h-14 flex items-center justify-center hover:bg-black hover:text-white transition-all border border-black/5 rounded-full">
                             <ChevronRight size={20} />
                         </button>
                     </div>
 
-                    <AnimatePresence mode="wait" custom={direction}>
-                        <motion.div
-                            key={currentDate.getMonth() + '-' + currentDate.getFullYear()}
-                            custom={direction}
-                            variants={variants}
-                            initial="enter"
-                            animate="center"
-                            exit="exit"
-                            transition={{ type: 'spring', damping: 80, stiffness: 1000 }}
-                        >
-                            {/* Weekdays */}
-                            <div className="grid grid-cols-7 text-center border-b border-black/5 bg-gray-50/30">
-                                {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
-                                    <div key={d} className="py-8 text-[11px] uppercase tracking-[0.6em] font-black text-black/30 border-r border-black/5 last:border-r-0">
-                                        {d}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Days Grid */}
-                            <div className="grid grid-cols-7 border-r border-black/5">
-                                {renderCalendar()}
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
+                    <div className="overflow-x-auto">
+                        <div className="min-w-[800px] grid grid-cols-7 border-r border-black/5">
+                            {renderCalendar()}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Reservation Call to Action */}
-                <div className="mt-40 max-w-4xl mx-auto text-center border border-black/5 p-20 bg-white relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-700"></div>
-                    <div className="relative z-10 transition-colors duration-500 group-hover:text-white">
-                        <span className="text-[10px] uppercase tracking-[0.5em] font-bold opacity-40 block mb-6">Planifique hoy</span>
-                        <h3 className="text-5xl font-serif italic mb-10">¿Encontró su fecha ideal?</h3>
-                        <p className="text-[11px] uppercase tracking-[0.3em] font-medium mb-12 opacity-60">Inicie su proceso de reserva exclusiva para asegurar el recinto bajo los estándares LUXURY.</p>
-                        <button className="px-16 py-6 border border-black/10 group-hover:border-white/20 text-[10px] uppercase tracking-[0.5em] font-black transition-all hover:bg-white hover:text-black">
+                {/* CTA MEJORADO SIN ELIMINAR NADA */}
+                <div className="mt-40 max-w-4xl mx-auto text-center border border-black/5 p-20 bg-white relative overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                    
+                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500"></div>
+
+                    <div className="relative z-10 transition-colors duration-500">
+                        <span className="text-[10px] uppercase tracking-[0.5em] font-bold opacity-50 block mb-6">
+                            Planifique hoy
+                        </span>
+
+                        <h3 className="text-5xl font-serif italic mb-10">
+                            ¿Encontró su fecha ideal?
+                        </h3>
+
+                        <p className="text-[11px] uppercase tracking-[0.3em] font-medium mb-12 opacity-70">
+                            Inicie su proceso de reserva exclusiva para asegurar el recinto bajo los estándares LUXURY.
+                        </p>
+
+                        <button 
+                            onClick={() => navigate('/reservar')}
+                            className="px-16 py-6 border border-black/10 text-[10px] uppercase tracking-[0.5em] font-black transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
+                        >
                             Iniciar Reserva
                         </button>
                     </div>
-                    {/* Background visual element */}
-                    <CalendarIcon size={300} className="absolute -bottom-20 -right-20 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity" />
+
+                    <CalendarIcon size={300} className="absolute -bottom-20 -right-20 opacity-[0.04] group-hover:opacity-[0.06] transition-opacity" />
                 </div>
+
             </div>
 
             <Footer />

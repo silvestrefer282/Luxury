@@ -32,16 +32,9 @@ const ServiceCard = ({ title, description, image, icon: Icon, price, delay, cate
 
         <div className="p-8 flex-1 flex flex-col">
             <h3 className="text-2xl font-serif mb-3 group-hover:text-accent transition-colors duration-300">{title}</h3>
-            <p className="text-primary-500 mb-6 leading-relaxed line-clamp-3">
+            <p className="text-primary-500 leading-relaxed line-clamp-3">
                 {description || "Servicio premium diseñado para elevar la calidad y sofisticación de su evento."}
             </p>
-
-            <div className="flex items-center justify-between mt-auto">
-                <button className="flex items-center gap-2 text-accent font-bold group/btn">
-                    Ver detalles
-                    <ArrowRight size={18} className="transition-transform duration-300 group-hover/btn:translate-x-2" />
-                </button>
-            </div>
         </div>
     </motion.div>
 );
@@ -186,10 +179,18 @@ function Servicios() {
             {/* Footer / Contact CTA */}
             <section className="py-32">
                 <div className="container px-6 mx-auto text-center">
-                    <h2 className="text-5xl mb-10 max-w-3xl mx-auto">¿Listo para comenzar a planear tu momento <span className="text-accent">inolvidable</span>?</h2>
-                    <button className="btn-luxury mx-auto px-12 py-5 text-xl">
+                    <h2 className="text-5xl mb-10 max-w-3xl mx-auto">
+                        ¿Listo para comenzar a planear tu momento <span className="text-accent">inolvidable</span>?
+                    </h2>
+
+                    <a
+                        href="https://wa.me/522414113108?text=Hola,%20quiero%20informaci%C3%B3n%20sobre%20sus%20servicios"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-luxury mx-auto px-12 py-5 text-xl inline-flex items-center gap-2"
+                    >
                         Contactar a un Asesor <ArrowRight size={24} />
-                    </button>
+                    </a>
                 </div>
             </section>
 

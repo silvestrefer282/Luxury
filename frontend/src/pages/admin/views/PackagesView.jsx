@@ -19,12 +19,12 @@ const PackagesView = ({
             {packages
                 .filter(pkg => normalizeText(pkg.name).includes(normalizeText(searchTerm)))
                 .map((pkg) => (
-                <div key={pkg.id} className="flex bg-white border border-luxury-black/5 hover:border-luxury-black transition-all duration-700 overflow-hidden min-h-[22rem] h-auto group shadow-sm hover:shadow-2xl">
-                    <div className="w-2/5 overflow-hidden relative">
+                <div key={pkg.id} className="flex flex-col md:flex-row bg-white border border-luxury-black/5 hover:border-luxury-black transition-all duration-700 overflow-hidden min-h-[22rem] h-auto group shadow-sm hover:shadow-2xl">
+                    <div className="w-full md:w-2/5 h-48 md:h-auto overflow-hidden relative">
                         <img src={pkg.image} alt={pkg.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-100 group-hover:scale-110" />
                         <div className="absolute inset-0 bg-luxury-black/20 group-hover:bg-transparent transition-colors duration-700" />
                     </div>
-                    <div className="flex-1 p-10 flex flex-col justify-between relative">
+                    <div className="flex-1 p-6 md:p-10 flex flex-col justify-between relative">
                         <div className="absolute top-0 right-0 p-6 opacity-[0.05] group-hover:opacity-10 transition-opacity">
                             <Package size={80} />
                         </div>

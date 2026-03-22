@@ -74,15 +74,15 @@ const DashboardView = ({ reservas, clients }) => {
             </div>
 
         {/* Recent Reservations Table */}
-        <div className="p-20 border border-luxury-black/5 bg-white shadow-xl overflow-hidden relative group/table rounded-3xl">
+        <div className="p-6 md:p-20 border border-luxury-black/5 bg-white shadow-xl overflow-hidden relative group/table rounded-3xl">
             <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none group-hover/table:opacity-[0.07] transition-opacity duration-1000">
                 <TrendingUp size={200} className="text-luxury-black" />
             </div>
             
-            <div className="flex justify-between items-end mb-20 px-2 relative z-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 md:gap-0 mb-20 px-2 relative z-10">
                 <div>
                     <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-luxury-gray-mid block mb-4 italic">Bitácora Editorial</span>
-                    <h2 className="text-6xl font-serif uppercase tracking-tight text-luxury-black">Reservas <span className="italic font-light text-luxury-gray-mid">Recientes</span></h2>
+                    <h2 className="text-4xl md:text-6xl font-serif uppercase tracking-tight text-luxury-black">Reservas <span className="italic font-light text-luxury-gray-mid">Recientes</span></h2>
                 </div>
                 <button 
                     onClick={handleExportCSV}

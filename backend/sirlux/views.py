@@ -114,6 +114,20 @@ class ReservacionViewSet(viewsets.ModelViewSet):
         }
         return Response(data)
 
+    @decorators.action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def calendario_publico(self, request):
+        reservas = Reservacion.objects.exclude(estado='Cancelada')
+        data = []
+        for r in reservas:
+            if r.fecha_evento:
+                data.append({
+                    "id": r.id,
+                    "fecha": r.fecha_evento.strftime('%Y-%m-%d'),
+                    "estado": r.estado,
+                    "nombre_evento": f"Evento de {r.nombre_festejado}" if r.nombre_festejado else "Evento Reservado",
+                })
+        return Response(data)
+
     @decorators.action(detail=True, methods=['post'])
     def cancelar(self, request, pk=None):
         reserva = self.get_object()

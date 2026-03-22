@@ -12,7 +12,8 @@ import {
     Users, 
     Settings, 
     UserCircle, 
-    LogOut 
+    LogOut,
+    X
 } from 'lucide-react';
 
 const menuItems = [
@@ -28,10 +29,28 @@ const menuItems = [
     { id: 'settings', label: 'Configuración', icon: Settings, roles: ['admin'] },
 ];
 
-const AdminSidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
+const AdminSidebar = ({ activeTab, setActiveTab, userRole, onLogout, isOpen, setIsOpen }) => {
     return (
-        <div className="w-80 h-screen bg-luxury-black text-luxury-white p-10 flex flex-col fixed left-0 top-0 border-r border-white/10 shadow-2xl z-[100]">
-            <div className="mb-20">
+        <>
+            {/* Mobile Overlay */}
+            {isOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-[90] md:hidden backdrop-blur-sm" 
+                    onClick={() => setIsOpen(false)}
+                />
+            )}
+            
+            <div className={`w-80 h-screen bg-luxury-black text-luxury-white p-10 flex flex-col fixed left-0 top-0 border-r border-white/10 shadow-2xl z-[100] transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+                
+                {/* Mobile Close Button */}
+                <button 
+                    className="absolute top-10 right-10 text-white/50 hover:text-white md:hidden"
+                    onClick={() => setIsOpen(false)}
+                >
+                    <X size={24} />
+                </button>
+
+                <div className="mb-20">
                 <h1 className="font-serif text-3xl uppercase tracking-widest italic font-light text-white">Luxury</h1>
                 <span className="text-[10px] uppercase tracking-[0.4em] text-luxury-gray-light font-bold block mt-2">Panel de Control</span>
             </div>
@@ -40,7 +59,10 @@ const AdminSidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
                 {menuItems.filter(item => item.roles.includes(userRole)).map((item) => (
                     <button
                         key={item.id}
-                        onClick={() => setActiveTab(item.id)}
+                        onClick={() => {
+                            setActiveTab(item.id);
+                            if (window.innerWidth < 768) setIsOpen(false);
+                        }}
                         className={`w-full flex items-center gap-6 group transition-all duration-300 ${activeTab === item.id ? 'text-luxury-white' : 'text-luxury-gray-mid hover:text-white'
                             }`}
                     >
@@ -70,6 +92,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

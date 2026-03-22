@@ -29,6 +29,7 @@ api.interceptors.response.use(
 export const reservacionService = {
     getAll: (params = {}) => api.get('reservaciones/', { params }),
     getDisponibilidad: (fecha) => api.get(`reservaciones/disponibilidad/?fecha=${fecha}`),
+    getPublicCalendar: () => api.get('reservaciones/calendario_publico/'),
     create: (data) => api.post('reservaciones/', data),
     cancelar: (id) => api.post(`reservaciones/${id}/cancelar/`),
 };
