@@ -12,10 +12,12 @@ filelock==3.18.0
 Flask==3.1.1
 Flask-Auth==0.85
 greenlet==3.2.4
+gunicorn==25.1.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.2
 mysql-connector-python==9.4.0
+packaging==26.0
 pillow==12.0.0
 platformdirs==4.3.8
 psycopg2-binary==2.9.11
