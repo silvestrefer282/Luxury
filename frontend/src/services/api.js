@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api/',
+    baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/',
     headers: {}
 });
 
@@ -46,13 +46,13 @@ export const menuService = {
     create: (data) => api.post('menus/', data),
     update: (id, data) => api.patch(`menus/${id}/`, data),
     delete: (id) => api.delete(`menus/${id}/`),
-    
+
     // Categorías y Platillos
     getCategorias: () => api.get('categorias-menu/'),
     createCategoria: (data) => api.post('categorias-menu/', data),
     updateCategoria: (id, data) => api.patch(`categorias-menu/${id}/`, data),
     deleteCategoria: (id) => api.delete(`categorias-menu/${id}/`),
-    
+
     getPlatillos: () => api.get('platillos/'),
     createPlatillo: (data) => api.post('platillos/', data),
     updatePlatillo: (id, data) => api.patch(`platillos/${id}/`, data),
@@ -111,6 +111,7 @@ export const configuracionService = {
 };
 
 export default api;
+
 export const authService = {
     login: (credentials) => api.post('usuarios/login/', {
         username: credentials.email,
