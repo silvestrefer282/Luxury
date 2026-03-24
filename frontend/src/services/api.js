@@ -44,8 +44,11 @@ export const reservacionService = {
     getDisponibilidad: (fecha) => api.get(`reservaciones/disponibilidad/?fecha=${fecha}`),
     getPublicCalendar: () => api.get('reservaciones/calendario_publico/'),
     create: (data) => api.post('reservaciones/', data),
+    update: (id, data) => api.patch(`reservaciones/${id}/`, data),
+    delete: (id) => api.delete(`reservaciones/${id}/`),
     cancelar: (id) => api.post(`reservaciones/${id}/cancelar/`),
 };
+
 
 export const paqueteService = {
     getAll: (params = {}) => api.get('paquetes/', { params }),
