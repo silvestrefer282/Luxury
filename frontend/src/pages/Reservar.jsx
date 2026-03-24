@@ -223,8 +223,29 @@ const Reservar = () => {
                 navigate('/');
             }, 3500);
         } catch (error) {
-            console.error(error);
-            notify(error.response?.data?.error || "Error al procesar la reserva. Verifica disponibilidad.");
+            console.error("Backend Error:", error);
+            console.error("Response Data:", error.response?.data);
+            
+            let msg = "Error al procesar la reserva. Verifica disponibilidad.";
+            if (error.response?.data) {
+                const data = error.response.data;
+                if (typeof data === 'string') {
+                    msg = data;
+                } else if (data.error && typeof data.error === 'string') {
+                    msg = data.error;
+                } else if (data.non_field_errors) {
+                    msg = Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors;
+                } else if (typeof data === 'object') {
+                    // Get the first field entry to show as error
+                    const firstKey = Object.keys(data)[0];
+                    if (firstKey) {
+                        const firstError = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
+                        // If it's a list like "Este campo es requerido."
+                        msg = typeof firstError === 'string' ? `${firstKey}: ${firstError}` : msg;
+                    }
+                }
+            }
+            notify(msg);
         } finally {
             setLoading(false);
         }
