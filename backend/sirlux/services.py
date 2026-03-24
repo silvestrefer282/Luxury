@@ -64,19 +64,6 @@ def verificar_disponibilidad(fecha, hora_inicio, hora_fin, reserva_id_ignore=Non
     if dt_fin_nueva <= dt_inicio_nueva:
         dt_fin_nueva += timedelta(days=1)
 
-    # Validar que el evento esté dentro del horario de operación
-    dt_apertura = datetime.combine(fecha, config.hora_apertura)
-    dt_cierre = datetime.combine(fecha, config.hora_cierre)
-    
-    # Si cierre es antes o igual que apertura, es al día siguiente (ej: cierre 00:00 o 01:00)
-    if dt_cierre <= dt_apertura:
-        dt_cierre += timedelta(days=1)
-
-    if dt_inicio_nueva < dt_apertura:
-        return False, f"El salón abre a las {config.hora_apertura.strftime('%H:%M')}. Ajusta la hora de inicio."
-    if dt_fin_nueva > dt_cierre:
-        return False, f"El evento terminaría después del horario de cierre ({config.hora_cierre.strftime('%H:%M')})."
-
     # Buscar reservas que puedan traslapar (hoy, ayer, mañana para cubrir eventos cruzando medianoche)
     reservas_rango = Reservacion.objects.filter(
         fecha_evento__range=[fecha - timedelta(days=1), fecha + timedelta(days=1)]
