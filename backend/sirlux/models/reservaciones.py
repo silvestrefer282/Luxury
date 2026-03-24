@@ -18,7 +18,7 @@ class Reservacion(models.Model):
     servicios_adicionales = models.ManyToManyField(ServicioAdicional, blank=True)
     platillos_seleccionados = models.ManyToManyField('Platillo', blank=True, related_name='reservaciones_donde_esta')
     
-    fecha_evento = models.DateField()
+    fecha_evento = models.DateField(db_index=True)
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     horas_adicionales = models.PositiveIntegerField(default=0)

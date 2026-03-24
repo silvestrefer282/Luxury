@@ -203,8 +203,15 @@ const Reservar = () => {
                 return;
             }
 
+            const pkg = paquetes.find(p => p.id === formData.paquete);
+            const totalDuration = (pkg?.duracion_horas || 0) + (formData.horas_adicionales || 0);
+            const [sh, sm] = formData.hora_inicio.split(':').map(Number);
+            const endH = (sh + totalDuration) % 24;
+            const horaFinCalculada = `${endH.toString().padStart(2, '0')}:${sm.toString().padStart(2, '0')}`;
+
             const payload = {
                 ...formData,
+                hora_fin: horaFinCalculada,
                 num_personas: Number(formData.num_personas),
                 cliente: clienteId,
                 observaciones: `Evento: ${formData.tipo_evento}. Festejado: ${formData.nombre_festejado}. Notas: ${formData.notas}`

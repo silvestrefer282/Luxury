@@ -8,9 +8,9 @@ class ServicioAdicional(models.Model):
 
     nombre = models.CharField(max_length=200)
     categoria = models.CharField(max_length=100, default='General')
-    descripcion = models.TextField()
+    descripcion = models.TextField(blank=True, null=True)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
-    tipo_cobro = models.CharField(max_length=20, choices=TIPO_COBRO_CHOICES)
+    tipo_cobro = models.CharField(max_length=20, choices=TIPO_COBRO_CHOICES, default='Por Evento')
     imagen = models.ImageField(upload_to='adicionales/', blank=True, null=True)
     estado = models.BooleanField(default=True)
 

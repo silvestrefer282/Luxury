@@ -655,7 +655,7 @@ export const useAdminDashboard = () => {
                     triggerAlert("Error de Seguridad", "No se pudo actualizar el rango del usuario.");
                 }
             },
-            "Escalar"
+            "Aceptar"
         );
     };
 

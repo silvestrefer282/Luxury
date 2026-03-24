@@ -9,7 +9,7 @@ from .models import (
 Usuario = get_user_model()
 
 class UsuarioSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False)
     cliente_id = serializers.SerializerMethodField()
 
     class Meta:
@@ -54,6 +54,9 @@ class ServicioAdicionalSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServicioAdicional
         fields = '__all__'
+        extra_kwargs = {
+            'descripcion': {'required': False, 'allow_null': True},
+        }
 
 class CategoriaMenuSerializer(serializers.ModelSerializer):
     class Meta:

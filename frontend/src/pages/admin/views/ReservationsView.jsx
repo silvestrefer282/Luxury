@@ -97,15 +97,6 @@ const ReservationsView = ({
                                  <td className="py-12 px-8 text-right flex justify-end gap-4">
                                     {userRole !== 'encargado' && (
                                         <>
-                                            {res.estado === 'Pendiente' && (
-                                                <button 
-                                                    onClick={() => handleConfirmReservation(res.id)}
-                                                    className="p-4 border border-luxury-black/5 text-luxury-black hover:bg-green-600 hover:text-white transition-all group-hover:bg-white/10 group-hover:text-white group-hover:hover:bg-green-600 rounded-xl"
-                                                    title="Confirmar Reserva"
-                                                >
-                                                    <FileCheck size={16} />
-                                                </button>
-                                            )}
                                             {contracts.find(c => c.reserva_id === res.id) ? (
                                                 <button 
                                                     onClick={() => {

@@ -38,7 +38,14 @@ class ConfiguracionSistemaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class ReservacionViewSet(viewsets.ModelViewSet):
-    queryset = Reservacion.objects.all()
+    queryset = Reservacion.objects.select_related(
+        'cliente__usuario', 
+        'paquete', 
+        'menu'
+    ).prefetch_related(
+        'servicios_adicionales', 
+        'platillos_seleccionados'
+    ).all()
     serializer_class = ReservacionSerializer
 
     def get_queryset(self):
@@ -235,7 +242,7 @@ class CategoriaMenuViewSet(viewsets.ModelViewSet):
     serializer_class = CategoriaMenuSerializer
 
 class PlatilloViewSet(viewsets.ModelViewSet):
-    queryset = Platillo.objects.all()
+    queryset = Platillo.objects.select_related('categoria').all()
     serializer_class = PlatilloSerializer
 
     def create(self, request, *args, **kwargs):
@@ -266,7 +273,9 @@ class GaleriaViewSet(viewsets.ModelViewSet):
     serializer_class = GaleriaSerializer
 
 class ContratoViewSet(viewsets.ModelViewSet):
-    queryset = Contrato.objects.all()
+    queryset = Contrato.objects.select_related(
+        'reservacion__cliente__usuario'
+    ).prefetch_related('pagos').all()
     serializer_class = ContratoSerializer
 
 class PagoContratoViewSet(viewsets.ModelViewSet):
@@ -306,7 +315,9 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                 return Response({"error": "Cuenta inactiva."}, status=status.HTTP_403_FORBIDDEN)
             
             token, _ = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key, "user": UsuarioSerializer(user).data})
+            # Pre-cargar perfil_cliente para el serializer
+            user_opt = Usuario.objects.select_related('perfil_cliente').get(id=user.id)
+            return Response({"token": token.key, "user": UsuarioSerializer(user_opt).data})
         
         # Check if the user exists but is deactivated, authenticate() returns None if is_active is boolean False
         user_check = Usuario.objects.filter(username=username).first()
@@ -316,7 +327,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         return Response({"error": "Usuario no registrado o contraseña incorrecta."}, status=status.HTTP_401_UNAUTHORIZED)
 
 class TestimonioViewSet(viewsets.ModelViewSet):
-    queryset = Testimonio.objects.all()
+    queryset = Testimonio.objects.select_related('reservacion__cliente__usuario').all()
     serializer_class = TestimonioSerializer
 
     def get_queryset(self):

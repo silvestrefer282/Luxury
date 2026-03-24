@@ -111,7 +111,7 @@ const Paquetes = () => {
                 </section>
 
                 {/* Filter section */}
-                <div className="sticky top-24 z-40 bg-white/90 backdrop-blur-md border-y border-primary-100 py-8 mb-24">
+                <div className="sticky top-[88px] z-[50] bg-white/95 backdrop-blur-md border-y border-primary-100 py-8 mb-24 transition-all duration-300">
                     <div className="max-w-[1600px] mx-auto flex justify-center gap-16 px-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
                         {['Todos', 'Básicos', 'Banquetes'].map((cat) => (
                             <button

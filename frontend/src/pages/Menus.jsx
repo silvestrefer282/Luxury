@@ -10,16 +10,7 @@ const Menus = () => {
     const [activeCategory, setActiveCategory] = useState(null);
     const [menuData, setMenuData] = useState({});
     const [loading, setLoading] = useState(true);
-    const [isBarFixed, setIsBarFixed] = useState(false);
 
-    useEffect(() => {
-        const handleScroll = () => {
-            // Fix bar when it reaches top (roughly 420px in Menus header)
-            setIsBarFixed(window.scrollY > 400); 
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     useEffect(() => {
         const fetchMenus = async () => {
@@ -75,7 +66,7 @@ const Menus = () => {
             </div>
             {/* Menu Navigator */}
             <div 
-                className={`${isBarFixed ? 'fixed top-[72px] left-0 right-0 z-[100] shadow-xl border-b' : 'relative border-y'} bg-white/95 backdrop-blur-xl border-black/5 py-8 transition-all duration-300`}
+                className="sticky top-[88px] z-[100] bg-white/95 backdrop-blur-xl border-y border-black/5 py-8 transition-all duration-300 shadow-sm"
             >
                 <div className="container mx-auto px-10 flex flex-wrap justify-center gap-12 md:gap-20">
                     {Object.keys(menuData).map((cat) => (
@@ -93,7 +84,6 @@ const Menus = () => {
                     ))}
                 </div>
             </div>
-            {isBarFixed && <div className="h-[80px]" />}
 
             <PageTransition>
                 {loading ? (
@@ -159,11 +149,6 @@ const Menus = () => {
                                     ))}
                                 </div>
 
-                                <div className="mt-20 pt-10 border-t border-black/10">
-                                    <button className="bg-black text-white w-full py-8 text-[11px] uppercase tracking-[0.5em] font-bold hover:bg-black/90 transition-all shadow-2xl">
-                                        Consultar Disponibilidad
-                                    </button>
-                                </div>
                             </motion.div>
                         </AnimatePresence>
                     </div>
