@@ -52,31 +52,32 @@ def calcular_costo_reservacion(reservacion_data, servicios_ids=None):
 
 def verificar_disponibilidad(fecha, hora_inicio, hora_fin, reserva_id_ignore=None):
     """
-    Verifica si hay traslape considerando el tiempo de limpieza y cruce de medianoche.
+    Verifica si hay traslape considerando el tiempo de limpieza.
+    Usa objetos datetime para evitar errores con medianoche.
     """
     config = ConfiguracionSistema.get_solo()
-    limpieza = timedelta(hours=config.hora_limpieza)
+    limpieza = timedelta(hours=float(config.hora_limpieza) if config.hora_limpieza else 0)
     
-    # Rango Operativo (Validación básica de horas)
-    # Si ch < ah, significa que el cierre es al día siguiente
-    ch = config.hora_cierre.hour * 60 + config.hora_cierre.minute
-    ah = config.hora_apertura.hour * 60 + config.hora_apertura.minute
-    sh = hora_inicio.hour * 60 + hora_inicio.minute
-    eh = hora_fin.hour * 60 + hora_fin.minute
-
-    if ch <= ah: ch += 1440
-    if eh <= sh: eh += 1440 # El evento termina el día siguiente
-    
-    # El inicio debe estar dentro del rango permitido del día actual
-    if sh < ah or eh > ch:
-        return False, f"La reserva está fuera del horario de operación ({config.hora_apertura} - {config.hora_cierre})."
-
+    # Construir datetimes para la nueva reserva
     dt_inicio_nueva = datetime.combine(fecha, hora_inicio)
     dt_fin_nueva = datetime.combine(fecha, hora_fin)
     if dt_fin_nueva <= dt_inicio_nueva:
         dt_fin_nueva += timedelta(days=1)
 
-    # Buscar reservas que puedan traslapar (hoy, ayer, mañana)
+    # Validar que el evento esté dentro del horario de operación
+    dt_apertura = datetime.combine(fecha, config.hora_apertura)
+    dt_cierre = datetime.combine(fecha, config.hora_cierre)
+    
+    # Si cierre es antes o igual que apertura, es al día siguiente (ej: cierre 00:00 o 01:00)
+    if dt_cierre <= dt_apertura:
+        dt_cierre += timedelta(days=1)
+
+    if dt_inicio_nueva < dt_apertura:
+        return False, f"El salón abre a las {config.hora_apertura.strftime('%H:%M')}. Ajusta la hora de inicio."
+    if dt_fin_nueva > dt_cierre:
+        return False, f"El evento terminaría después del horario de cierre ({config.hora_cierre.strftime('%H:%M')})."
+
+    # Buscar reservas que puedan traslapar (hoy, ayer, mañana para cubrir eventos cruzando medianoche)
     reservas_rango = Reservacion.objects.filter(
         fecha_evento__range=[fecha - timedelta(days=1), fecha + timedelta(days=1)]
     ).exclude(estado='Cancelada')
@@ -91,11 +92,11 @@ def verificar_disponibilidad(fecha, hora_inicio, hora_fin, reserva_id_ignore=Non
             dt_fin_existente += timedelta(days=1)
         
         # Bloque bloqueado: desde (inicio - limpieza) hasta (fin + limpieza)
-        bloque_existente_inicio = dt_inicio_existente - limpieza
-        bloque_existente_fin = dt_fin_existente + limpieza
+        bloque_inicio = dt_inicio_existente - limpieza
+        bloque_fin = dt_fin_existente + limpieza
         
-        # Hay traslape si: (Nueva_Inicio < Existente_Fin_Limp) AND (Nueva_Fin > Existente_Inicio_Limp)
-        if dt_inicio_nueva < bloque_existente_fin and dt_fin_nueva > bloque_existente_inicio:
-            return False, f"Conflicto con evento de {r.hora_inicio.strftime('%H:%M')} a {r.hora_fin.strftime('%H:%M')} (incluyendo limpieza)."
+        # Hay traslape si los rangos se superponen
+        if dt_inicio_nueva < bloque_fin and dt_fin_nueva > bloque_inicio:
+            return False, f"Conflicto con evento existente de {r.hora_inicio.strftime('%H:%M')} a {r.hora_fin.strftime('%H:%M')} (incluye limpieza)."
 
     return True, "Disponible"

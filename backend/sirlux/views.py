@@ -62,14 +62,27 @@ class ReservacionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Lógica de creación con cálculo automático
         data = self.request.data
-        paquete = Paquete.objects.get(id=data['paquete'])
-        menu = Menu.objects.get(id=data['menu']) if data.get('menu') else None
+        try:
+            paquete = Paquete.objects.get(id=data['paquete'])
+        except (Paquete.DoesNotExist, KeyError, ValueError):
+            raise serializers.ValidationError("Paquete no válido o no encontrado.")
+
+        # Handle empty string or None for menu
+        menu_id = data.get('menu')
+        menu = None
+        if menu_id and str(menu_id).strip():
+            try:
+                menu = Menu.objects.get(id=menu_id)
+            except (Menu.DoesNotExist, ValueError):
+                menu = None
         
         # Validar número de platillos vs tiempos del paquete
         platillos_ids = data.get('platillos_seleccionados', [])
+        if isinstance(platillos_ids, str):
+            platillos_ids = []
         if len(platillos_ids) > paquete.numero_tiempos:
             raise serializers.ValidationError(
-                f"El paquete '{paquete.nombre}' solo permite {paquete.numero_tiempos} tiempos (platillos). Ha seleccionado {len(platillos_ids)}."
+                f"El paquete '{paquete.nombre}' solo permite {paquete.numero_tiempos} tiempos. Ha seleccionado {len(platillos_ids)}."
             )
         
         hora_inicio = datetime.strptime(data['hora_inicio'], '%H:%M').time()
@@ -96,6 +109,7 @@ class ReservacionViewSet(viewsets.ModelViewSet):
         # Guardar platillos seleccionados
         if platillos_ids:
             reserva.platillos_seleccionados.set(platillos_ids)
+
 
     @decorators.action(detail=False, methods=['get'])
     def disponibilidad(self, request):
