@@ -287,10 +287,24 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     @decorators.action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def registro(self, request):
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        # The frontend sends 'nombre' — map it to 'first_name'
+        if 'nombre' in data and 'first_name' not in data:
+            data['first_name'] = data.pop('nombre')
+        # Auto-generate username from email if not provided
+        if 'username' not in data and 'email' in data:
+            base = data['email'].split('@')[0]
+            # Make username unique
+            username = base
+            counter = 1
+            while Usuario.objects.filter(username=username).exists():
+                username = f"{base}{counter}"
+                counter += 1
+            data['username'] = username
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             user = serializer.save()
-            # Todos los roles ahora pueden tener un perfil de cliente para hacer sus propias reservas
+            # Todos los roles ahora pueden tener un perfil de cliente
             Cliente.objects.get_or_create(usuario=user)
             token, _ = Token.objects.get_or_create(user=user)
             return Response({"token": token.key, "user": UsuarioSerializer(user).data}, status=status.HTTP_201_CREATED)
@@ -298,7 +312,8 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     @decorators.action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def login(self, request):
-        username_or_email = request.data.get('username')
+        # The frontend sends { email, password } — accept both `email` and `username` keys
+        username_or_email = request.data.get('email') or request.data.get('username')
         password = request.data.get('password')
         
         username = username_or_email
@@ -319,12 +334,13 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             user_opt = Usuario.objects.select_related('perfil_cliente').get(id=user.id)
             return Response({"token": token.key, "user": UsuarioSerializer(user_opt).data})
         
-        # Check if the user exists but is deactivated, authenticate() returns None if is_active is boolean False
-        user_check = Usuario.objects.filter(username=username).first()
+        # Check if the user exists but is deactivated
+        user_check = Usuario.objects.filter(username=username).first() if username else None
         if user_check and not user_check.estatus:
             return Response({"error": "Cuenta desactivada. Por favor, contacte a un administrador."}, status=status.HTTP_403_FORBIDDEN)
             
         return Response({"error": "Usuario no registrado o contraseña incorrecta."}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 class TestimonioViewSet(viewsets.ModelViewSet):
     queryset = Testimonio.objects.select_related('reservacion__cliente__usuario').all()

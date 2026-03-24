@@ -28,7 +28,7 @@ const Navbar = () => {
         { name: 'Galería', path: '/galeria' },
         { name: 'Menús', path: '/menus' },
         { name: 'Disponibilidad', path: '/disponibilidad' },
-        { name: 'Reservar', path: '/reservar' },
+        { name: 'Reserva', path: '/reservar' },
     ];
 
     const openAuth = (mode) => {

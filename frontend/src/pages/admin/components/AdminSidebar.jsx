@@ -18,7 +18,7 @@ import {
 
 const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
-    { id: 'reservations', label: 'Reservaciones', icon: CalendarCheck, roles: ['admin', 'encargado'] },
+    { id: 'reservations', label: 'Reservas', icon: CalendarCheck, roles: ['admin', 'encargado'] },
     { id: 'packages', label: 'Paquetes', icon: Package, roles: ['admin'] },
     { id: 'adicionales', label: 'Adicionales', icon: Plus, roles: ['admin'] },
     { id: 'menus', label: 'Menús', icon: Utensils, roles: ['admin'] },

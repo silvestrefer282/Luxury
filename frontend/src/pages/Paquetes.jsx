@@ -357,7 +357,7 @@ const Paquetes = () => {
                                             onClick={() => navigate('/reservar')}
                                             className="flex-1 bg-black text-white text-[11px] uppercase tracking-[0.5em] font-bold py-6 hover:bg-primary-800 transition-all shadow-2xl"
                                         >
-                                            Reservar Experiencia
+                                            Reserva la Experiencia
                                         </button>
                                         <button
                                             onClick={() => setSelectedPack(null)}

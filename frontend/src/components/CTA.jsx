@@ -46,7 +46,7 @@ const CTA = () => {
                     {/* 👇 SI HAY USUARIO → SOLO RESERVAR */}
                     {user && (
                         <Link to="/reservar" className="btn-luxury">
-                            Reservar ahora
+                            Reserva ahora
                         </Link>
                     )}
 

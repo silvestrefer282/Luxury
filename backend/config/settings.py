@@ -116,20 +116,8 @@ AUTH_USER_MODEL = 'sirlux.Usuario'
 # =========================
 # PASSWORDS
 # =========================
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
+# Sin validadores de contraseña — se aceptan contraseñas cortas (1-8 dígitos)
+AUTH_PASSWORD_VALIDATORS = []
 
 # =========================
 # INTERNACIONALIZACIÓN
