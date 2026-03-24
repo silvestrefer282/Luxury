@@ -48,7 +48,7 @@ const AdicionalModal = ({
                             />
                         </div>
                         <div className="h-px bg-black/5 w-full"></div>
-                        <div className="grid grid-cols-2 gap-10">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-10">
                             <div className="space-y-4">
                                 <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Inversión ($)</label>
                                 <input 
@@ -76,6 +76,19 @@ const AdicionalModal = ({
                                     <option value="Gastronomía">Gastronomía</option>
                                     <option value="Estructura">Estructura</option>
                                     <option value="Fotografía">Fotografía</option>
+                                </select>
+                            </div>
+                            <div className="space-y-4">
+                                <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Tipo de Cobro</label>
+                                <select 
+                                    name="tipo_cobro" 
+                                    required
+                                    value={adicionalForm.tipo_cobro}
+                                    onChange={handleAdicionalFormChange}
+                                    className="w-full border-b border-black/10 py-4 px-2 focus:border-black outline-none text-xl font-light transition-all bg-transparent"
+                                >
+                                    <option value="Por Evento">Por Evento</option>
+                                    <option value="Por Persona">Por Persona</option>
                                 </select>
                             </div>
                         </div>

@@ -71,7 +71,8 @@ const AdicionalesView = ({
                                         name: item.name || '',
                                         price: item.price || '',
                                         category: item.category || 'Entretenimiento',
-                                        description: item.description || ''
+                                        description: item.description || '',
+                                        tipo_cobro: item.tipo_cobro || 'Por Evento'
                                     });
                                 }} 
                                 className="w-10 h-10 flex items-center justify-center text-luxury-black hover:bg-luxury-black hover:text-white border border-black/10 transition-all outline-none"

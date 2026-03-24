@@ -105,7 +105,9 @@ export const useAdminDashboard = () => {
     const formatImageUrl = (url) => {
         if (!url) return null;
         if (url.startsWith('http')) return url;
-        return `http://127.0.0.1:8000${url.startsWith('/') ? '' : '/'}${url}`;
+        // Obtenemos la base de la API y quitamos el /api al final para apuntar a la raíz del servidor (media)
+        const apiBase = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/api\/?$/, '');
+        return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`;
     };
 
     const normalizeText = (text) => {
@@ -182,6 +184,8 @@ export const useAdminDashboard = () => {
                 name: a.nombre,
                 price: a.precio_unitario,
                 category: a.categoria,
+                description: a.descripcion,
+                tipo_cobro: a.tipo_cobro,
                 url: formatImageUrl(a.imagen)
             })));
 
@@ -560,7 +564,7 @@ export const useAdminDashboard = () => {
         data.append('precio_unitario', formData.get('price'));
         data.append('categoria', formData.get('category'));
         data.append('descripcion', formData.get('description'));
-        data.append('tipo_cobro', 'Por Evento');
+        data.append('tipo_cobro', formData.get('tipo_cobro') || 'Por Evento');
         
         const img = formData.get('imagen');
         if (img && img.size > 0) data.append('imagen', img);
@@ -572,6 +576,7 @@ export const useAdminDashboard = () => {
             resetAdicionalForm();
             triggerAlert("Servicio Registrado", "El nuevo servicio complementario ha sido añadido exitosamente.");
         } catch (error) {
+            console.error("Error creating service:", error.response?.data || error);
             triggerAlert("Error de Catálogo", "No se pudo registrar el nuevo servicio en el sistema.");
         }
     };
@@ -584,6 +589,7 @@ export const useAdminDashboard = () => {
         data.append('precio_unitario', formData.get('price'));
         data.append('categoria', formData.get('category'));
         data.append('descripcion', formData.get('description'));
+        data.append('tipo_cobro', formData.get('tipo_cobro') || 'Por Evento');
         
         const img = formData.get('imagen');
         if (img && img.size > 0) data.append('imagen', img);
@@ -595,6 +601,7 @@ export const useAdminDashboard = () => {
             resetAdicionalForm();
             triggerAlert("Cambios Guardados", "La propuesta del servicio ha sido refinada exitosamente.");
         } catch (error) {
+            console.error("Error updating service:", error.response?.data || error);
             triggerAlert("Error de Actualización", "Hubo un problema al intentar actualizar el servicio.");
         }
     };
@@ -693,7 +700,13 @@ export const useAdminDashboard = () => {
     };
 
     const resetAdicionalForm = () => {
-        setAdicionalForm({ name: '', price: '', category: 'Entretenimiento', description: '' });
+        setAdicionalForm({ 
+            name: '', 
+            price: '', 
+            category: 'Entretenimiento', 
+            description: '',
+            tipo_cobro: 'Por Evento'
+        });
     };
 
     const resetUserForm = () => {
