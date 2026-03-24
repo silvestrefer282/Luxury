@@ -50,10 +50,17 @@ const AdminSidebar = ({ activeTab, setActiveTab, userRole, onLogout, isOpen, set
                     <X size={24} />
                 </button>
 
-                <div className="mb-20">
-                <h1 className="font-serif text-3xl uppercase tracking-widest italic font-light text-white">Luxury</h1>
-                <span className="text-[10px] uppercase tracking-[0.4em] text-luxury-gray-light font-bold block mt-2">Panel de Control</span>
-            </div>
+                <div className="mb-20 flex items-center gap-4">
+                    <img 
+                        src="/images/logo.png" 
+                        alt="LUXURY" 
+                        className="h-10 w-auto object-contain brightness-0 invert" 
+                    />
+                    <div>
+                        <h1 className="font-serif text-xl uppercase tracking-widest italic font-light text-white leading-none">Luxury</h1>
+                        <span className="text-[8px] uppercase tracking-[0.4em] text-luxury-gray-light font-bold block mt-1">Panel de Control</span>
+                    </div>
+                </div>
 
             <nav className="flex-1 space-y-10 overflow-y-auto overflow-x-hidden pr-4 -mr-4 luxury-scrollbar-dark">
                 {menuItems.filter(item => item.roles.includes(userRole)).map((item) => (

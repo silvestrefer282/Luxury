@@ -1,7 +1,20 @@
 import axios from 'axios';
 
+// Corregir posibles typos en la URL de la API (ej. pro.1 por production)
+const getApiUrl = () => {
+    let url = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/';
+    
+    // Si la URL contiene 'pro.1', es un typo de 'production' en la configuración de Vercel/Railway
+    if (url.includes('luxury-enjoyment-pro.1')) {
+        url = url.replace('luxury-enjoyment-pro.1', 'luxury-enjoyment-production-4d.up.railway.app');
+    }
+    
+    // Asegurar que termine en /
+    return url.endsWith('/') ? url : `${url}/`;
+};
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/',
+    baseURL: getApiUrl(),
     headers: {}
 });
 
