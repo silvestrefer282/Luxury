@@ -126,23 +126,10 @@ export const useAdminDashboard = () => {
         setConfirmState({ isOpen: true, title, message, onConfirm: null, type: 'alert', confirmText: 'Entendido' });
     };
 
-    const fetchData = async () => {
+    const fetchPackages = async () => {
         try {
-            const [respPkg, respRes, respAd, respCats, respPlat, respGal, respCont, respClients, respTest, respUsers, respConfig] = await Promise.all([
-                paqueteService.getAll(),
-                reservacionService.getAll(),
-                servicioService.getAll(),
-                menuService.getCategorias(),
-                menuService.getPlatillos(),
-                galeriaService.getAll(),
-                contratoService.getAll(),
-                clienteService.getAll(),
-                testimonioService.getAll(),
-                usuarioService.getAll(),
-                configuracionService.getCurrent()
-            ]);
-            
-            setPackages(respPkg.data.map(p => ({
+            const resp = await paqueteService.getAll();
+            setPackages(resp.data.map(p => ({
                 id: p.id,
                 name: p.nombre,
                 price: p.precio_base,
@@ -158,8 +145,13 @@ export const useAdminDashboard = () => {
                 numero_tiempos: p.numero_tiempos,
                 incluye_menu: p.incluye_menu
             })));
+        } catch (e) { console.error("Error fetching packages:", e); }
+    };
 
-            setReservas(respRes.data.map(r => ({
+    const fetchReservations = async () => {
+        try {
+            const resp = await reservacionService.getAll();
+            setReservas(resp.data.map(r => ({
                 id: r.id,
                 cliente: r.cliente_nombre || 'Cliente Anonimo',
                 telefono: r.telefono_contacto || r.cliente_telefono || 'S/N',
@@ -178,8 +170,13 @@ export const useAdminDashboard = () => {
                 total: `$${Number(r.total_estimado).toLocaleString()}`,
                 total_raw: Number(r.total_estimado)
             })));
+        } catch (e) { console.error("Error fetching reservations:", e); }
+    };
 
-            setAdicionales(respAd.data.map(a => ({
+    const fetchAdicionales = async () => {
+        try {
+            const resp = await servicioService.getAll();
+            setAdicionales(resp.data.map(a => ({
                 id: a.id,
                 name: a.nombre,
                 price: a.precio_unitario,
@@ -188,15 +185,25 @@ export const useAdminDashboard = () => {
                 tipo_cobro: a.tipo_cobro,
                 url: formatImageUrl(a.imagen)
             })));
+        } catch (e) { console.error("Error fetching adicionales:", e); }
+    };
 
-            setGaleria(respGal.data.map(g => ({
+    const fetchGallery = async () => {
+        try {
+            const resp = await galeriaService.getAll();
+            setGaleria(resp.data.map(g => ({
                 id: g.id,
                 title: g.titulo,
                 url: formatImageUrl(g.imagen),
-                category: g.categoria
+                category: g.category
             })));
+        } catch (e) { console.error("Error fetching gallery:", e); }
+    };
 
-            setContracts(respCont.data.map(c => ({
+    const fetchContracts = async () => {
+        try {
+            const resp = await contratoService.getAll();
+            setContracts(resp.data.map(c => ({
                 id: c.id,
                 folio: c.folio,
                 cliente: c.cliente_nombre || 'N/A',
@@ -210,7 +217,6 @@ export const useAdminDashboard = () => {
                 pagos: c.pagos || [],
                 saldo_pendiente: c.saldo_pendiente,
                 total_pagado: c.total_pagado,
-                // Nuevos campos para el PDF
                 domicilio_consumidor: c.domicilio_consumidor,
                 telefono_consumidor: c.telefono_consumidor,
                 tipo_evento: c.tipo_evento,
@@ -220,16 +226,15 @@ export const useAdminDashboard = () => {
                 duracion_horas: c.duracion_horas,
                 fecha_limite_pago: c.fecha_limite_pago
             })));
+        } catch (e) { console.error("Error fetching contracts:", e); }
+    };
 
-            setClients(respClients.data.map(c => ({
-                id: c.id,
-                name: c.usuario_detalle?.get_full_name || 'N/A'
-            })));
-
-            setTestimonios(respTest.data);
-            setUsersList(respUsers.data);
-            setConfigForm(respConfig.data);
-          
+    const fetchMenus = async () => {
+        try {
+            const [respCats, respPlat] = await Promise.all([
+                menuService.getCategorias(),
+                menuService.getPlatillos()
+            ]);
             const menuObj = {};
             respCats.data.forEach(cat => {
                 menuObj[cat.nombre] = {
@@ -244,9 +249,54 @@ export const useAdminDashboard = () => {
                 };
             });
             setMenus(menuObj);
-        } catch (error) {
-            console.error("Error fetching data:", error);
-        }
+        } catch (e) { console.error("Error fetching menus:", e); }
+    };
+
+    const fetchTestimonios = async () => {
+        try {
+            const resp = await testimonioService.getAll();
+            setTestimonios(resp.data);
+        } catch (e) { console.error("Error fetching testimonies:", e); }
+    };
+
+    const fetchUsers = async () => {
+        try {
+            const resp = await usuarioService.getAll();
+            setUsersList(resp.data);
+        } catch (e) { console.error("Error fetching users:", e); }
+    };
+
+    const fetchClients = async () => {
+        try {
+            const resp = await clienteService.getAll();
+            setClients(resp.data.map(c => ({
+                id: c.id,
+                name: c.usuario_detalle?.get_full_name || 'N/A'
+            })));
+        } catch (e) { console.error("Error fetching clients:", e); }
+    };
+
+    const fetchConfig = async () => {
+        try {
+            const resp = await configuracionService.getCurrent();
+            setConfigForm(resp.data);
+        } catch (e) { console.error("Error fetching config:", e); }
+    };
+
+    const fetchData = async () => {
+        // Initial load: fetch everything
+        await Promise.all([
+            fetchPackages(),
+            fetchReservations(),
+            fetchAdicionales(),
+            fetchGallery(),
+            fetchContracts(),
+            fetchClients(),
+            fetchTestimonios(),
+            fetchUsers(),
+            fetchConfig(),
+            fetchMenus()
+        ]);
     };
 
     useEffect(() => {
@@ -298,7 +348,7 @@ export const useAdminDashboard = () => {
 
         try {
             await galeriaService.create(data);
-            fetchData();
+            await fetchGallery();
             setIsAddingGallery(false);
             triggerAlert("Imagen Agregada", "La nueva imagen ha sido integrada en la galería exitosamente");
         } catch (error) {
@@ -313,7 +363,7 @@ export const useAdminDashboard = () => {
             async () => {
                 try {
                     await galeriaService.delete(id);
-                    await fetchData();
+                    await fetchGallery();
                     triggerAlert("Imagen Eliminada", "La imagen ha sido retirada de la galería exitosamente");
                 } catch (error) {
                     triggerAlert("Error de Archivo", "No se pudo eliminar la imagen seleccionada.");
@@ -333,7 +383,7 @@ export const useAdminDashboard = () => {
 
         try {
             await galeriaService.update(id, data);
-            await fetchData();
+            await fetchGallery();
             setEditingGallery(null);
             triggerAlert("Imagen Actualizada", "Los datos de la imagen se actualizaron exitosamente");
         } catch (error) {
@@ -366,7 +416,7 @@ export const useAdminDashboard = () => {
         
         try {
             await paqueteService.create(data);
-            fetchData();
+            await fetchPackages();
             setIsAddingPackage(false);
             resetPackageForm();
             triggerAlert("Paquete Creado", "La nueva propuesta editorial ha sido registrada exitosamente.");
@@ -409,7 +459,7 @@ export const useAdminDashboard = () => {
 
         try {
             await paqueteService.update(editingPackage.id, data);
-            fetchData();
+            await fetchPackages();
             setEditingPackage(null);
             resetPackageForm();
             triggerAlert("Edición Finalizada", "Se han guardado los cambios del paquete.");
@@ -425,7 +475,7 @@ export const useAdminDashboard = () => {
             async () => {
                 try {
                     await paqueteService.delete(id);
-                    fetchData();
+                    await fetchPackages();
                 } catch (error) {
                     triggerAlert("Error de Sistema", "No fue posible eliminar el registro en este momento.");
                 }
@@ -445,7 +495,7 @@ export const useAdminDashboard = () => {
                         t.id === id ? { ...t, aprobado: true } : t
                     ));
                     await testimonioService.update(id, { aprobado: true });
-                    await fetchData();
+                    await fetchTestimonios();
                     triggerAlert("Reseña Publicada", "El testimonio ahora se encuentra disponible para visualización pública.");
                 } catch (error) {
                     setTestimonios(prev => prev.map(t => 
@@ -469,7 +519,7 @@ export const useAdminDashboard = () => {
                     // Optimistic UI update to remove the item instantly from the list
                     setTestimonios(prev => prev.filter(t => t.id !== id));
                     
-                    fetchData();
+                    await fetchTestimonios();
                     triggerAlert("Eliminado", "La reseña ha sido retirada con éxito.");
                 } catch (error) {
                     triggerAlert("Error", "No se pudo eliminar el testimonio.");
@@ -482,7 +532,7 @@ export const useAdminDashboard = () => {
     const handleConfirmReservation = async (id) => {
         try {
             await reservacionService.update(id, { estado: 'Confirmada' });
-            await fetchData();
+            await fetchReservations();
             triggerAlert("Reserva Confirmada", "El evento ha sido validado y ahora ocupa el espacio oficial en el calendario.");
         } catch (error) {
             triggerAlert("Error", "No se pudo confirmar la reserva.");
@@ -496,7 +546,7 @@ export const useAdminDashboard = () => {
             async () => {
                 try {
                     await reservacionService.cancelar(id);
-                    await fetchData();
+                    await fetchReservations();
                     triggerAlert("Reserva Anulada", "El evento ha sido cancelado formalmente y el espacio liberado.");
                 } catch (error) {
                     triggerAlert("Error de Reserva", "No se pudo procesar la cancelación del evento.");
@@ -520,7 +570,7 @@ export const useAdminDashboard = () => {
             };
 
             await contratoService.create(payload);
-            fetchData();
+            await Promise.all([fetchContracts(), fetchReservations()]);
             setSelectedReservationForContract(null);
             triggerAlert("Contrato Generado", "El acuerdo legal ha sido digitalizado y vinculado a la reserva exitosamente.");
         } catch (error) {
@@ -545,7 +595,7 @@ export const useAdminDashboard = () => {
         try {
             await pagoContratoService.create(data);
             triggerAlert("Abono Registrado", "El pago ha sido procesado e integrado al historial editorial del contrato.");
-            fetchData();
+            await fetchContracts();
             setSelectedContractForPayments(null);
         } catch (error) {
             triggerAlert("Error de Caja", "No se pudo registrar el abono en este momento.");
@@ -562,7 +612,7 @@ export const useAdminDashboard = () => {
                 observaciones: `ADMIN MANUAL - Evento: ${reservationForm.tipo_evento}. Festejado: ${reservationForm.nombre_festejado}. Notas: ${reservationForm.notas || 'Sin notas'}`
             };
             await reservacionService.create(payload);
-            fetchData();
+            await fetchReservations();
             setIsAddingReservation(false);
             setReservationForm({
                 cliente: '', paquete: '', tipo_evento: '', fecha_evento: '', 
@@ -592,7 +642,7 @@ export const useAdminDashboard = () => {
 
         try {
             await servicioService.create(data);
-            fetchData();
+            await fetchAdicionales();
             setIsAddingAdicional(false);
             resetAdicionalForm();
             triggerAlert("Servicio Registrado", "El nuevo servicio complementario ha sido añadido exitosamente.");
@@ -617,7 +667,7 @@ export const useAdminDashboard = () => {
 
         try {
             await servicioService.update(editingAdicional.id, data);
-            fetchData();
+            await fetchAdicionales();
             setEditingAdicional(null);
             resetAdicionalForm();
             triggerAlert("Cambios Guardados", "La propuesta del servicio ha sido refinada exitosamente.");
@@ -634,7 +684,7 @@ export const useAdminDashboard = () => {
             async () => {
                 try {
                     await servicioService.delete(id);
-                    fetchData();
+                    await fetchAdicionales();
                 } catch (error) {
                     triggerAlert("Error de Operación", "No fue posible retirar el servicio del sistema.");
                 }
@@ -649,7 +699,7 @@ export const useAdminDashboard = () => {
             async () => {
                 try {
                     await usuarioService.update(userId, { rol: newRol });
-                    await fetchData();
+                    await fetchUsers();
                     triggerAlert("Privilegios Actualizados", `El perfil ahora cuenta con facultades de ${newRol}.`);
                 } catch (error) {
                     triggerAlert("Error de Seguridad", "No se pudo actualizar el rango del usuario.");
@@ -666,7 +716,7 @@ export const useAdminDashboard = () => {
             async () => {
                 try {
                     await usuarioService.update(userId, { estatus: newStatus });
-                    await fetchData();
+                    await fetchUsers();
                     triggerAlert("Estado Modificado", `El acceso al sistema ha sido ${newStatus ? 'habilitado' : 'restringido'} exitosamente.`);
                 } catch (error) {
                     triggerAlert("Error de Operación", "No fue posible modificar el estado del usuario.");
@@ -683,7 +733,7 @@ export const useAdminDashboard = () => {
             async () => {
                 try {
                     await usuarioService.delete(userId);
-                    fetchData();
+                    await fetchUsers();
                     triggerAlert("Usuario Eliminado", "La cuenta ha sido removida exitosamente.");
                 } catch (error) {
                     triggerAlert("Error", "No se pudo procesar la baja del usuario.");
@@ -697,7 +747,7 @@ export const useAdminDashboard = () => {
         e.preventDefault();
         try {
             await usuarioService.create(userForm);
-            fetchData();
+            await fetchUsers();
             setIsAddingUser(false);
             resetUserForm();
             triggerAlert("Usuario Creado", "La nueva cuenta ha sido registrada en el sistema.");
@@ -757,7 +807,7 @@ export const useAdminDashboard = () => {
         if (catId) {
             try {
                 await menuService.updateCategoria(catId, { nombre: newName });
-                fetchData();
+                await fetchMenus();
                 triggerAlert("Sección Renombrada", `La sección ahora se identifica como ${newName}.`);
             } catch (error) {
                 triggerAlert("Error", "No se pudo renombrar la sección.");
@@ -772,7 +822,7 @@ export const useAdminDashboard = () => {
             async () => {
                 try {
                     await menuService.deletePlatillo(itemId);
-                    fetchData();
+                    await fetchMenus();
                     triggerAlert("Elemento Retirado", "El platillo ha sido removido exitosamente.");
                 } catch (error) {
                     triggerAlert("Error", "No se pudo eliminar el platillo.");
@@ -790,7 +840,7 @@ export const useAdminDashboard = () => {
             async () => {
                 try {
                     await menuService.deleteCategoria(catId);
-                    fetchData();
+                    await fetchMenus();
                     triggerAlert("Sección Eliminada", "La categoría ha sido removida del sistema.");
                 } catch (error) {
                     triggerAlert("Error", "No se pudo eliminar la categoría.");
@@ -806,7 +856,7 @@ export const useAdminDashboard = () => {
         
         try {
             await menuService.createCategoria(formData);
-            await fetchData();
+            await fetchMenus();
             triggerAlert("Categoría Creada", `La sección '${catName}' se ha añadido al menú.`);
         } catch (error) {
             console.error("Error creating category:", error.response?.data || error);
