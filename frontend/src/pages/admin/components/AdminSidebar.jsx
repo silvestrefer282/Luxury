@@ -54,7 +54,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, userRole, onLogout, isOpen, set
                     <img 
                         src="/images/logo.png" 
                         alt="LUXURY" 
-                        className="h-32 w-auto object-contain brightness-0 invert" 
+                        className="h-20 w-auto object-contain brightness-0 invert" 
                     />
                 </div>
 
