@@ -1,7 +1,6 @@
 import React from 'react';
 import { MapPin, Phone, Mail, Facebook, Instagram } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import logo from '../assets/logo_luxury_contract.jpg';
 
 const Footer = () => {
     return (
@@ -12,9 +11,9 @@ const Footer = () => {
                     {/* LOGO */}
                     <div>
                         <img 
-                            src={logo} 
+                            src="/images/logo.png" 
                             alt="Luxury Logo" 
-                            className="w-32 mb-4 opacity-90"
+                            className="w-32 mb-4 opacity-90 brightness-0 invert"
                         />
 
                         <p className="text-white/40 text-xs leading-relaxed max-w-xs">

@@ -51,7 +51,7 @@ const AdminTopbar = ({
                     <Menu size={28} />
                 </button>
                 <div>
-                    <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-luxury-gray-mid block mb-2 md:mb-4 italic">Sirlux Luxury Archive</span>
+                    <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-luxury-gray-mid block mb-2 md:mb-4 italic">Sirlux Archive</span>
                     <h2 className="text-3xl md:text-6xl font-serif uppercase tracking-tight text-luxury-black">{getTabTitle()}</h2>
                 </div>
             </div>
