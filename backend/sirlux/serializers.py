@@ -64,6 +64,10 @@ class PlatilloSerializer(serializers.ModelSerializer):
     class Meta:
         model = Platillo
         fields = '__all__'
+        extra_kwargs = {
+            'descripcion': {'required': False, 'allow_null': True},
+            'imagen': {'required': False, 'allow_null': True},
+        }
 
 class ConfiguracionSistemaSerializer(serializers.ModelSerializer):
     class Meta:

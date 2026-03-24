@@ -323,7 +323,14 @@ export const useAdminDashboard = () => {
         );
     };
 
-    const handleUpdateGallery = async (id, data) => {
+    const handleUpdateGallery = async (id, galleryData) => {
+        const data = new FormData();
+        data.append('titulo', galleryData.titulo);
+        data.append('categoria', galleryData.categoria);
+        if (galleryData.imagen) {
+            data.append('imagen', galleryData.imagen);
+        }
+
         try {
             await galeriaService.update(id, data);
             await fetchData();
@@ -428,24 +435,27 @@ export const useAdminDashboard = () => {
     };
 
     const handleApproveTestimonio = async (id) => {
-        try {
-            // Optimistic UI update to remove the button instantly (absolute zero delay)
-            setTestimonios(prev => prev.map(t => 
-                t.id === id ? { ...t, aprobado: true } : t
-            ));
-
-            await testimonioService.update(id, { aprobado: true });
-            
-            fetchData();
-            triggerAlert("Reseña Aprobada", "El testimonio ahora es visible en la página principal.");
-        } catch (error) {
-            // Revert changes on error
-            setTestimonios(prev => prev.map(t => 
-                t.id === id ? { ...t, aprobado: false } : t
-            ));
-            console.error("Error approving testimonio:", error.response?.data || error);
-            triggerAlert("Error", "No se pudo actualizar el estado del testimonio.\n" + JSON.stringify(error.response?.data || {}));
-        }
+        triggerConfirm(
+            "Difundir Reseña",
+            "¿Desea publicar este testimonio en la sección editorial de la página principal?",
+            async () => {
+                try {
+                    // Optimistic UI update
+                    setTestimonios(prev => prev.map(t => 
+                        t.id === id ? { ...t, aprobado: true } : t
+                    ));
+                    await testimonioService.update(id, { aprobado: true });
+                    await fetchData();
+                    triggerAlert("Reseña Publicada", "El testimonio ahora se encuentra disponible para visualización pública.");
+                } catch (error) {
+                    setTestimonios(prev => prev.map(t => 
+                        t.id === id ? { ...t, aprobado: false } : t
+                    ));
+                    triggerAlert("Error de Registro", "No se pudo actualizar el estado de la reseña.");
+                }
+            },
+            "Publicar"
+        );
     };
 
     const handleDeleteTestimonio = async (id) => {
@@ -469,6 +479,16 @@ export const useAdminDashboard = () => {
         );
     };
 
+    const handleConfirmReservation = async (id) => {
+        try {
+            await reservacionService.update(id, { estado: 'Confirmada' });
+            await fetchData();
+            triggerAlert("Reserva Confirmada", "El evento ha sido validado y ahora ocupa el espacio oficial en el calendario.");
+        } catch (error) {
+            triggerAlert("Error", "No se pudo confirmar la reserva.");
+        }
+    };
+
     const handleCancelReservation = async (id) => {
         triggerConfirm(
             "Anular Reserva",
@@ -476,7 +496,8 @@ export const useAdminDashboard = () => {
             async () => {
                 try {
                     await reservacionService.cancelar(id);
-                    fetchData();
+                    await fetchData();
+                    triggerAlert("Reserva Anulada", "El evento ha sido cancelado formalmente y el espacio liberado.");
                 } catch (error) {
                     triggerAlert("Error de Reserva", "No se pudo procesar la cancelación del evento.");
                 }
@@ -622,23 +643,37 @@ export const useAdminDashboard = () => {
     };
 
     const handleUpdateUserRole = async (userId, newRol) => {
-        try {
-            await usuarioService.update(userId, { rol: newRol });
-            fetchData();
-            triggerAlert("Rol Actualizado", `El usuario ahora tiene permisos de ${newRol}.`);
-        } catch (error) {
-            triggerAlert("Error de Sistema", "No fue posible actualizar el privilegio del usuario.");
-        }
+        triggerConfirm(
+            "Privilegios Luxury",
+            `¿Desea cambiar el rango del usuario a '${newRol}'? Esto alterará sus capacidades en el sistema editorial.`,
+            async () => {
+                try {
+                    await usuarioService.update(userId, { rol: newRol });
+                    await fetchData();
+                    triggerAlert("Privilegios Actualizados", `El perfil ahora cuenta con facultades de ${newRol}.`);
+                } catch (error) {
+                    triggerAlert("Error de Seguridad", "No se pudo actualizar el rango del usuario.");
+                }
+            },
+            "Escalar"
+        );
     };
 
     const handleToggleUserStatus = async (userId, newStatus) => {
-        try {
-            await usuarioService.update(userId, { estatus: newStatus });
-            fetchData();
-            triggerAlert("Estatus Modificado", `Se ha ${newStatus ? 'habilitado' : 'restringido'} el acceso al sistema.`);
-        } catch (error) {
-            triggerAlert("Error de Operación", "No fue posible modificar el estado del usuario.");
-        }
+        triggerConfirm(
+            newStatus ? "Restablecer Acceso" : "Suspender Acceso",
+            `¿Desea ${newStatus ? 'rehabilitar' : 'bloquear'} la entrada de este usuario al ecosistema Luxury?`,
+            async () => {
+                try {
+                    await usuarioService.update(userId, { estatus: newStatus });
+                    await fetchData();
+                    triggerAlert("Estado Modificado", `El acceso al sistema ha sido ${newStatus ? 'habilitado' : 'restringido'} exitosamente.`);
+                } catch (error) {
+                    triggerAlert("Error de Operación", "No fue posible modificar el estado del usuario.");
+                }
+            },
+            newStatus ? "Habilitar" : "Bloquear"
+        );
     };
 
     const handleDeleteUser = async (userId) => {
@@ -766,12 +801,17 @@ export const useAdminDashboard = () => {
     };
 
     const handleCreateCategory = async (catName) => {
+        const formData = new FormData();
+        formData.append('nombre', catName);
+        
         try {
-            await menuService.createCategoria({ nombre: catName });
-            fetchData();
+            await menuService.createCategoria(formData);
+            await fetchData();
             triggerAlert("Categoría Creada", `La sección '${catName}' se ha añadido al menú.`);
         } catch (error) {
-            triggerAlert("Error de Catálogo", "No se pudo crear la nueva categoría. Es posible que el nombre ya exista.");
+            console.error("Error creating category:", error.response?.data || error);
+            const detail = error.response?.data?.nombre?.[0] || error.response?.data?.error || "Es posible que el nombre ya exista.";
+            triggerAlert("Error de Catálogo", `No se pudo crear la nueva categoría. Detalle: ${detail}`);
         }
     };
 
@@ -798,7 +838,7 @@ export const useAdminDashboard = () => {
         coverFile, setCoverFile, deletedGalleryIds, setDeletedGalleryIds,
         fetchData, handleCreateGallery, handleUpdateGallery, handleDeleteGallery, handleCreatePackage,
         handleUpdatePackage, handleDeletePackage, handleApproveTestimonio,
-        handleDeleteTestimonio, handleCancelReservation, handleCreateContract,
+        handleDeleteTestimonio, handleCancelReservation, handleConfirmReservation, handleCreateContract,
         handleCreatePayment, handleCreateReservation, handleCreateAdicional,
         handleUpdateAdicional, handleDeleteAdicional, handleUpdateUserRole,
         handleToggleUserStatus, handleDeleteUser, handleCreateUser, resetPackageForm, 

@@ -12,6 +12,8 @@ const GalleryEditModal = ({
         titulo: '',
         categoria: 'Montaje',
     });
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
     
     useEffect(() => {
         if (editingGallery) {
@@ -19,6 +21,8 @@ const GalleryEditModal = ({
                 titulo: editingGallery.title || '',
                 categoria: editingGallery.category || 'Montaje',
             });
+            setSelectedFile(null);
+            setPreviewUrl(null);
         }
     }, [editingGallery]);
 
@@ -26,7 +30,10 @@ const GalleryEditModal = ({
 
     const onSubmit = (e) => {
         e.preventDefault();
-        handleUpdateGallery(editingGallery.id, formData);
+        handleUpdateGallery(editingGallery.id, {
+            ...formData,
+            imagen: selectedFile
+        });
     };
 
     const handleChange = (e) => {
@@ -79,12 +86,33 @@ const GalleryEditModal = ({
                         </div>
                         
                         <div className="space-y-4">
-                            <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Archivo Actual (No editable aquí)</label>
+                            <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Actualizar Imagen (Opcional)</label>
                             <div className="flex items-center gap-8 p-10 border border-dashed border-luxury-black/10 rounded-xl bg-black/[0.01]">
-                                {editingGallery.url && (
-                                    <img src={editingGallery.url} alt="Previa" className="w-24 h-24 object-cover rounded-xl grayscale opacity-80" />
+                                {previewUrl ? (
+                                    <img src={previewUrl} alt="Nueva Previa" className="w-24 h-24 object-cover rounded-xl shadow-lg border-2 border-luxury-black" />
+                                ) : editingGallery.url ? (
+                                    <img src={editingGallery.url} alt="Previa Actual" className="w-24 h-24 object-cover rounded-xl grayscale opacity-50" />
+                                ) : (
+                                    <div className="w-24 h-24 bg-black/5 rounded-xl flex items-center justify-center">
+                                        <ImageIcon className="text-luxury-black opacity-20" size={30} />
+                                    </div>
                                 )}
-                                <span className="text-[10px] uppercase tracking-widest font-bold">{editingGallery.title}</span>
+                                <div className="flex-1">
+                                    <input 
+                                        type="file" 
+                                        name="imagen" 
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                setSelectedFile(file);
+                                                setPreviewUrl(URL.createObjectURL(file));
+                                            }
+                                        }}
+                                        className="text-[10px] uppercase tracking-widest font-bold w-full cursor-pointer" 
+                                    />
+                                    <p className="mt-3 text-[9px] text-black/30 font-bold uppercase tracking-widest">Deja vacío para conservar la imagen actual</p>
+                                </div>
                             </div>
                         </div>
                         

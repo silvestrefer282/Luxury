@@ -71,8 +71,17 @@ const Reservar = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         
+        // Validación de teléfono: Solo números y máximo 10 dígitos
+        if (name === 'telefono_contacto') {
+            const digitsOnly = value.replace(/\D/g, '');
+            if (digitsOnly.length <= 10) {
+                setFormData(prev => ({ ...prev, [name]: digitsOnly }));
+            }
+            return;
+        }
+
         if (name === 'fecha_evento') {
-            const isBooked = reservacionesActivas.some(r => r.fecha === value);
+            const isBooked = reservacionesActivas.some(r => r.fecha === value && r.estado !== 'Cancelada');
             if (isBooked) {
                 notify("Esta fecha ya se encuentra reservada. Por favor, selecciona otro día.");
                 setFormData(prev => ({ ...prev, [name]: '' }));
@@ -552,7 +561,17 @@ const Reservar = () => {
                                     </div>
                                     <div className="space-y-2 lg:col-span-2">
                                         <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Línea Telefónica</label>
-                                        <input type="tel" name="telefono_contacto" value={formData.telefono_contacto} onChange={handleChange} placeholder="10 dígitos" required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" />
+                                        <input 
+                                            type="tel" 
+                                            name="telefono_contacto" 
+                                            value={formData.telefono_contacto} 
+                                            onChange={handleChange} 
+                                            placeholder="10 dígitos (Ej: 2411234567)" 
+                                            required 
+                                            maxLength="10"
+                                            pattern="\d{10}"
+                                            className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" 
+                                        />
                                     </div>
                                 </div>
                             </section>
@@ -662,7 +681,7 @@ const Reservar = () => {
                                     onChange={handleChange}
                                     rows="6"
                                     placeholder="Comparte detalles específicos para elevar tu evento..."
-                                    className="w-full border-2 border-gray-50 rounded-[30px] p-8 outline-none focus:border-black transition-all bg-gray-50/30"
+                                    className="w-full border-2 border-black rounded-[30px] p-8 outline-none focus:border-black transition-all bg-white"
                                 ></textarea>
                             </section>
 

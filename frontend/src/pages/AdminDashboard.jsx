@@ -176,6 +176,8 @@ const AdminDashboard = () => {
                     fetchData={dashboard.fetchData}
                     handleRenameCategory={dashboard.handleRenameCategory}
                     handleRemoveItem={dashboard.handleRemoveItem}
+                    triggerAlert={dashboard.triggerAlert}
+                    triggerConfirm={dashboard.triggerConfirm}
                 />
             )}
 

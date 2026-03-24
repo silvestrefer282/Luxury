@@ -10,7 +10,9 @@ const MenuCategoryModal = ({
     menus,
     fetchData,
     handleRenameCategory,
-    handleRemoveItem
+    handleRemoveItem,
+    triggerAlert,
+    triggerConfirm
 }) => {
     const [newItemName, setNewItemName] = useState('');
     const [categoryDesc, setCategoryDesc] = useState(menus[category]?.descripcion || '');
@@ -23,13 +25,17 @@ const MenuCategoryModal = ({
             const formData = new FormData();
             formData.append('categoria', catId);
             formData.append('nombre', newItemName);
+            formData.append('descripcion', ''); // Blind fix for potential backend 500 if missing
 
             try {
                 await menuService.createPlatillo(formData);
                 fetchData();
                 setNewItemName('');
+                triggerAlert("Platillo Añadido", `El plato '${newItemName}' ha sido integrado con éxito.`);
             } catch (error) {
                 console.error("Error adding item:", error);
+                const detail = error.response?.data?.nombre?.[0] || error.response?.data?.error || "Error interno del servidor (500). Verifique los datos.";
+                triggerAlert("Error de Registro", `No se pudo añadir el platillo. Detalle: ${detail}`);
             }
         }
     };
@@ -79,7 +85,16 @@ const MenuCategoryModal = ({
                         <div className="flex items-center gap-6">
                             <input 
                                 defaultValue={category}
-                                onBlur={(e) => handleRenameCategory(category, e.target.value)}
+                                onBlur={(e) => {
+                                    const newName = e.target.value;
+                                    if (newName !== category && newName.trim()) {
+                                        triggerConfirm(
+                                            "Renombrar Sección",
+                                            `¿Desea cambiar el nombre de '${category}' a '${newName}'?`,
+                                            () => handleRenameCategory(category, newName)
+                                        );
+                                    }
+                                }}
                                 className="text-7xl font-serif italic font-light text-luxury-gray-mid bg-transparent border-none outline-none focus:text-luxury-black transition-colors"
                             />
                             <Edit3 size={14} className="text-luxury-gray-mid opacity-0 group-hover/title:opacity-100 transition-opacity" />
