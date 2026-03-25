@@ -61,11 +61,11 @@ const MenuCategoryModal = ({
         <AnimatePresence>
             <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[3000] bg-luxury-black/95 backdrop-blur-sm flex items-center justify-center p-10"
+                className="fixed inset-0 z-[3000] bg-luxury-black/95 backdrop-blur-sm flex justify-center p-4 md:p-10 overflow-y-auto"
             >
                 <motion.div
                     initial={{ scale: 0.9, y: 50 }} animate={{ scale: 1, y: 0 }}
-                    className="bg-luxury-white max-w-4xl w-full p-20 relative max-h-[90vh] overflow-y-auto shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/5"
+                    className="bg-luxury-white max-w-4xl w-full p-8 md:p-20 relative h-fit my-auto shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/5"
                 >
                     <button onClick={onClose} className="absolute top-10 right-10 text-luxury-gray-mid hover:text-luxury-black transition-all">
                         <X size={32} />
