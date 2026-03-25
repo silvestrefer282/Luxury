@@ -94,7 +94,7 @@ const PackagesView = ({
                                     <Trash2 size={14} />
                                 </button>
                              </div>
-                             <span className="text-[8px] uppercase tracking-[0.3em] font-black text-luxury-gray-mid">Luxury Estate Piece</span>
+                             <span className="text-[8px] uppercase tracking-[0.3em] font-black text-luxury-gray-mid">Registro de Paquete</span>
                         </div>
                     </div>
                 </div>

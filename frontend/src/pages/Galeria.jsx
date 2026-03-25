@@ -35,8 +35,8 @@ const Galeria = () => {
 
             {/* Gallery Header */}
             <div className="container mx-auto px-10 mb-20 text-center">
-                <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-black/40 block mb-6">Visual Storytelling</span>
-                <h1 className="text-7xl md:text-8xl font-serif uppercase tracking-tighter mb-10">Editorial <br /><span className="italic font-light">Gallery</span></h1>
+                <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-black/40 block mb-6">Narrativa Visual</span>
+                <h1 className="text-7xl md:text-8xl font-serif uppercase tracking-tighter mb-10">Editorial <br /><span className="italic font-light">Galería</span></h1>
                 <div className="w-20 h-px bg-black mx-auto mb-10"></div>
                 <p className="max-w-2xl mx-auto text-black/60 text-sm font-light leading-relaxed uppercase tracking-widest">
                     Una curaduría visual de los momentos más exclusivos capturados en Luxury Salón Social.
@@ -70,7 +70,7 @@ const Galeria = () => {
 
                                 {/* Hover Overlay */}
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
-                                    <span className="text-[9px] uppercase tracking-[0.4em] font-bold text-white/60 mb-2">Luxury Moments</span>
+                                    <span className="text-[9px] uppercase tracking-[0.4em] font-bold text-white/60 mb-2">Momentos Luxury</span>
                                     <h3 className="text-white text-xl font-serif italic">{img.title}</h3>
                                     <Maximize2 className="text-white absolute top-8 right-8" size={20} />
                                 </div>
@@ -111,7 +111,7 @@ const Galeria = () => {
                         />
 
                         <div className="absolute bottom-10 left-10 md:left-20">
-                            <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-white/40 block mb-2 px-4 border-l border-white/40">Portfolio</span>
+                            <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-white/40 block mb-2 px-4 border-l border-white/40">Portafolio</span>
                             <h2 className="text-white text-4xl md:text-5xl font-serif italic px-4">{selectedImage.title}</h2>
                         </div>
                     </motion.div>

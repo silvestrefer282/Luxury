@@ -476,9 +476,11 @@ export const useAdminDashboard = () => {
                 try {
                     await paqueteService.delete(id);
                     await fetchPackages();
-                    triggerAlert("Paquete Retirado", "El paquete ha sido eliminado de la colección exitosamente.");
+                    triggerAlert("Paquete Eliminado", "El paquete ha sido eliminado de la colección exitosamente.");
                 } catch (error) {
-                    triggerAlert("Error de Sistema", "No fue posible eliminar el registro en este momento.");
+                    const serverMsg = error.response?.data?.error || error.response?.data?.detail;
+                    const displayMsg = serverMsg || "No fue posible eliminar el registro. Verifique si el paquete tiene reservaciones o contratos asociados.";
+                    triggerAlert("Error de Sistema", displayMsg);
                 }
             },
             "Eliminar"

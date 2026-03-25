@@ -188,7 +188,7 @@ const Paquetes = () => {
                                 <div className="mt-64">
                                     <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-10">
                                         <div className="max-w-xl">
-                                            <span className="text-primary-400 text-[10px] uppercase tracking-[0.5em] font-bold mb-6 block">Add-ons</span>
+                                            <span className="text-primary-400 text-[10px] uppercase tracking-[0.5em] font-bold mb-6 block">Complementos</span>
                                             <h2 className="text-5xl md:text-7xl font-serif uppercase text-black leading-none">Servicios <span className="italic font-light">Adicionales</span></h2>
                                         </div>
                                         <p className="text-primary-500 font-light text-lg max-w-sm italic leading-relaxed">

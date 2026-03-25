@@ -19,7 +19,7 @@ const DashboardView = ({ reservas, clients }) => {
         return acc + (!isNaN(num) ? num : 0);
     }, 0) : 0;
     
-    const formattedIngresos = `$${ingresos.toLocaleString('en-US')}`;
+    const formattedIngresos = `$${ingresos.toLocaleString('es-MX')}`;
 
     const handleExportCSV = () => {
         if (!reservas || reservas.length === 0) return;

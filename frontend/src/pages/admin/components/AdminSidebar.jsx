@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
+    { id: 'dashboard', label: 'Resumen', icon: LayoutDashboard, roles: ['admin'] },
     { id: 'reservations', label: 'Reservas', icon: CalendarCheck, roles: ['admin', 'encargado'] },
     { id: 'packages', label: 'Paquetes', icon: Package, roles: ['admin'] },
     { id: 'adicionales', label: 'Adicionales', icon: Plus, roles: ['admin'] },

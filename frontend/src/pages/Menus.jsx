@@ -58,7 +58,7 @@ const Menus = () => {
             {/* Gastronomy Header */}
             <div className="container mx-auto px-10 pt-32 mb-32 text-center">
                 <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-black/40 block mb-6 px-4 border-l-2 border-black inline-block">Culinaria Luxury</span>
-                <h1 className="text-7xl md:text-8xl font-serif uppercase tracking-tighter mb-10">Signature <br /><span className="italic font-light text-black/80">Menus</span></h1>
+                <h1 className="text-7xl md:text-8xl font-serif uppercase tracking-tighter mb-10">Menús <br /><span className="italic font-light text-black/80">de Autor</span></h1>
                 <p className="max-w-xl mx-auto text-black/50 text-[10px] uppercase tracking-[0.3em] font-medium leading-loose border-t border-black/10 pt-10">
                     Una experiencia gastronómica de alta costura diseñada para cautivar los sentidos.
                     Ingredientes frescos, técnicas vanguardistas.
@@ -112,7 +112,7 @@ const Menus = () => {
                             
                             <div className="absolute inset-x-10 top-10 flex justify-between items-start border-b border-white/40 pb-10">
                                 <Utensils className="text-white" size={24} strokeWidth={1} />
-                                <span className="text-white/60 text-[9px] uppercase tracking-[0.4em]">Section {activeCategory && menuData[activeCategory]?.title.toUpperCase()}</span>
+                                <span className="text-white/60 text-[9px] uppercase tracking-[0.4em]">Sección {activeCategory && menuData[activeCategory]?.title.toUpperCase()}</span>
                             </div>
                             <div className="absolute inset-x-10 bottom-10">
                                 <h2 className="text-white text-6xl font-serif italic mb-6 leading-tight drop-shadow-2xl">{activeCategory && menuData[activeCategory]?.title}</h2>
