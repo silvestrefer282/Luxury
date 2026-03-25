@@ -186,7 +186,10 @@ const Disponibilidad = () => {
                             <ChevronLeft size={20} />
                         </button>
 
-                        <motion.h2 className="text-5xl font-serif uppercase tracking-widest italic">
+                        <motion.h2 
+                            key={currentDate.toISOString()}
+                            className="text-5xl font-serif uppercase tracking-widest italic"
+                        >
                             {monthNames[currentDate.getMonth()]} <span className="not-italic font-light opacity-30">{currentDate.getFullYear()}</span>
                         </motion.h2>
 

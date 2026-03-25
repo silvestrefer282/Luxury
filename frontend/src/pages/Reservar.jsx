@@ -244,8 +244,14 @@ const Reservar = () => {
     const selectedPkg = paquetes.find(p => p.id == formData.paquete);
     const selectedServices = servicios.filter(s => formData.servicios_adicionales.some(id => id == s.id));
 
-    const extraHoursCost = (formData.horas_adicionales || 0) * (Number(selectedPkg?.precio_hora_adicional) || 0);
-    const totalPrice = (Number(selectedPkg?.precio_base) || 0) + extraHoursCost + selectedServices.reduce((sum, s) => sum + Number(s.precio_unitario || 0), 0);
+    const parseSafe = (val) => {
+        if (!val) return 0;
+        const num = parseFloat(String(val).replace(/[^0-9.-]+/g, ""));
+        return isNaN(num) ? 0 : num;
+    };
+
+    const extraHoursCost = (formData.horas_adicionales || 0) * parseSafe(selectedPkg?.precio_hora_adicional);
+    const totalPrice = parseSafe(selectedPkg?.precio_base) + extraHoursCost + selectedServices.reduce((sum, s) => sum + parseSafe(s.precio_unitario), 0);
 
     const format12h = (time24) => {
         if (!time24) return '--:--';
@@ -358,7 +364,7 @@ const Reservar = () => {
                             <p className="text-[9px] uppercase tracking-widest text-white/30 font-black">Paquete</p>
                             <p className="text-sm font-bold tracking-tighter uppercase">{selectedPkg.nombre}</p>
                         </div>
-                        <span className="text-sm font-light tracking-tighter text-white/60">${Number(selectedPkg.precio_base).toLocaleString()}</span>
+                        <span className="text-sm font-light tracking-tighter text-white/60">${parseSafe(selectedPkg.precio_base).toLocaleString()}</span>
                     </div>
                 ) : (
                     <p className="text-[10px] uppercase tracking-widest text-white/20 italic">No se ha seleccionado paquete...</p>
@@ -398,7 +404,7 @@ const Reservar = () => {
                             {selectedServices.map(s => (
                                 <div key={s.id} className="flex justify-between items-center">
                                     <span className="text-[10px] uppercase tracking-wider text-white/80">{s.nombre}</span>
-                                    <span className="text-[10px] text-white/40">${Number(s.precio_unitario).toLocaleString()}</span>
+                                    <span className="text-[10px] text-white/40">${parseSafe(s.precio_unitario).toLocaleString()}</span>
                                 </div>
                             ))}
                         </div>
@@ -465,7 +471,7 @@ const Reservar = () => {
                                             >
                                                 <h4 className="font-serif text-3xl uppercase tracking-tighter mb-2">{p.nombre}</h4>
                                                 <div className="flex items-baseline gap-1 mb-10">
-                                                    <span className="text-4xl font-light tracking-tighter">${Number(p.precio_base).toLocaleString()}</span>
+                                                    <span className="text-4xl font-light tracking-tighter">${parseSafe(p.precio_base).toLocaleString()}</span>
                                                 </div>
 
                                                 <div className="space-y-4 text-[11px] uppercase tracking-widest text-gray-400 font-bold flex flex-col items-center">
@@ -477,7 +483,7 @@ const Reservar = () => {
                                                 {/* Hora adicional info */}
                                                 <div className="mt-12 pt-8 border-t border-gray-50 w-full flex justify-between items-center text-[10px] uppercase tracking-widest font-black text-gray-300">
                                                     <span>Hora Adicional</span>
-                                                    <span className="text-black">${Number(p.precio_hora_adicional).toLocaleString()}</span>
+                                                    <span className="text-black">${parseSafe(p.precio_hora_adicional).toLocaleString()}</span>
                                                 </div>
                                             </motion.div>
                                         );
@@ -663,7 +669,7 @@ const Reservar = () => {
                                             >
                                                 <div className="space-y-1">
                                                     <span className="uppercase tracking-[0.2em] font-black text-[9px] block">{s.nombre}</span>
-                                                    <span className="text-gray-400 text-xs">${Number(s.precio_unitario).toLocaleString()}</span>
+                                                    <span className="text-gray-400 text-xs">${parseSafe(s.precio_unitario).toLocaleString()}</span>
                                                 </div>
                                                 <Shield size={16} className={isSelected ? 'text-black' : 'text-gray-100'} />
                                             </div>
