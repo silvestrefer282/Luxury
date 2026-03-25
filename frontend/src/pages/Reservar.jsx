@@ -196,10 +196,13 @@ const Reservar = () => {
                 notify(`El salón abre a las ${format12h(config.hora_apertura)}. Por favor ajusta la hora de inicio.`);
                 return;
             }
+            // User requested: "no importa que acabe". We show the end time but don't block based on closure.
+            /*
             if (endTotal > closureTotal) {
                 notify(`El evento terminaría a las ${endTimeFormatted}, pero el salón cierra a las ${format12h(config.hora_cierre)}. Por favor reduce las horas o ajusta el inicio.`);
                 return;
             }
+            */
         }
 
         setLoading(true);
@@ -281,9 +284,9 @@ const Reservar = () => {
 
     const getAvailableHours = () => {
         const hours = [];
-        // The user explicitly requested start times to be strictly between 10:00 AM and 9:00 PM (21:00)
-        const minStart = 10 * 60; // 10:00 AM
-        const maxStart = 21 * 60; // 9:00 PM
+        // The user explicitly requested start times to be strictly between 9:00 AM and 9:00 PM (21:00)
+        const minStart = 9 * 60; // 09:00 AM
+        const maxStart = 21 * 60; // 09:00 PM
         
         const totalDuration = (selectedPkg?.duracion_horas || 0) + (formData.horas_adicionales || 0);
         const cleaning = config ? (Number(config.hora_limpieza) || 0) : 0;
