@@ -241,6 +241,20 @@ class ContratoViewSet(viewsets.ModelViewSet):
 class PagoContratoViewSet(viewsets.ModelViewSet):
     queryset = PagoContrato.objects.all()
     serializer_class = PagoContratoSerializer
+
+    def perform_create(self, serializer):
+        pago = serializer.save()
+        contrato = pago.contrato
+        # Recalcular saldo total pagado (incluyendo anticipo)
+        total_pagado = sum(p.monto for p in contrato.pagos.all()) + contrato.anticipo_monto
+        # Total a pagar = Inversión + Depósito
+        deuda_total = contrato.total_operacion + contrato.deposito_garantia
+        
+        if total_pagado >= deuda_total:
+            reserva = contrato.reservacion
+            if reserva.estado != 'Confirmada':
+                reserva.estado = 'Confirmada'
+                reserva.save()
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer

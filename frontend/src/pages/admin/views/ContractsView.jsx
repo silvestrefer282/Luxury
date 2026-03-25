@@ -74,7 +74,7 @@ const ContractsView = ({
                                 </span>
                             </td>
                             <td className="py-12 px-4 text-right text-2xl font-serif font-light tracking-tighter text-luxury-black group-hover:text-white whitespace-nowrap">${Number(c.total).toLocaleString()}</td>
-                            <td className="py-12 px-4 text-right text-2xl font-serif font-bold tracking-tighter text-red-600 group-hover:text-red-400 whitespace-nowrap">${Number(c.saldo_pendiente).toLocaleString()}</td>
+                            <td className={`py-12 px-4 text-right text-2xl font-serif font-bold tracking-tighter whitespace-nowrap ${Number(c.saldo_pendiente) <= 0 ? 'text-luxury-black' : 'text-red-600 group-hover:text-red-400'}`}>${Number(c.saldo_pendiente).toLocaleString()}</td>
                             <td className="py-12 px-4 text-right flex justify-end gap-3">
                                 <button 
                                     onClick={() => setSelectedContractForPayments(c)}
