@@ -1,124 +1,162 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, Maximize2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { galeriaService } from '../services/api';
 
-const GalleryCard = ({ img, title, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.8, ease: [0.2, 1, 0.3, 1] }}
-    viewport={{ once: true }}
-    className="group relative aspect-[4/5] overflow-hidden bg-primary-50 border border-black/5 hover:border-black transition-all duration-700 shadow-sm hover:shadow-2xl"
-  >
-    <img
-      src={img || 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=800'}
-      alt={title}
-      className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-100 group-hover:scale-105"
-    />
-    
-    {/* Overlay */}
-    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8 text-left">
-      <span className="text-[9px] uppercase tracking-[0.4em] font-bold text-white/70 mb-2">Luxury Highlights</span>
-      <h3 className="text-white text-2xl font-serif italic mb-4">{title || "Esencia Luxury"}</h3>
-      <div className="flex items-center gap-2 text-white/60 group-hover:text-white transition-colors">
-        <Maximize2 size={16} />
-        <span className="text-[9px] uppercase tracking-widest font-bold">Ver Detalles</span>
-      </div>
-    </div>
-  </motion.div>
-);
-
 const GalleryHighlights = () => {
-  const [highlights, setHighlights] = useState([]);
-  const [loading, setLoading] = useState(true);
+    const [highlights, setHighlights] = useState([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchGallery = async () => {
-      try {
-        const response = await galeriaService.getAll();
-        // Limit to 3 recent highlights for the home page
-        const mapped = response.data.slice(0, 3).map(img => ({
-          id: img.id,
-          img: img.imagen,
-          title: img.titulo || 'Esencia Luxury'
-        }));
-        setHighlights(mapped);
-      } catch (error) {
-        console.error("Error fetching gallery highlights:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGallery();
-  }, []);
+    useEffect(() => {
+        const fetchGallery = async () => {
+            try {
+                const response = await galeriaService.getAll();
+                // Fetch up to 8 images for the carousel
+                const mapped = response.data.slice(0, 8).map(img => ({
+                    id: img.id,
+                    img: img.imagen,
+                    title: img.titulo || 'Esencia Luxury'
+                }));
+                setHighlights(mapped);
+            } catch (error) {
+                console.error("Error fetching gallery highlights:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchGallery();
+    }, []);
 
-  return (
-    <section className="py-32 bg-white px-6">
-      <div className="container mx-auto text-center">
-        <motion.span
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          className="text-primary-400 font-bold tracking-[0.5em] uppercase text-[10px] block mb-6"
-        >
-          Visual Storytelling
-        </motion.span>
-        
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          className="text-6xl md:text-8xl mb-10 font-serif uppercase tracking-tighter"
-        >
-          Eventos <span className="italic font-light">Destacados</span>
-        </motion.h2>
-        
-        <motion.div 
-            initial={{ width: 0 }}
-            whileInView={{ width: "80px" }}
-            className="h-px bg-black mx-auto mb-10"
-        />
+    const nextSlide = useCallback(() => {
+        setCurrentIndex((prev) => (prev + 1) % highlights.length);
+    }, [highlights.length]);
 
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          className="text-primary-500 text-lg max-w-2xl mx-auto mb-20 leading-relaxed font-light italic"
-        >
-          Una curaduría visual de los momentos más exclusivos capturados en nuestro salón. 
-          Donde cada detalle cuenta una historia de sofisticación.
-        </motion.p>
+    const prevSlide = useCallback(() => {
+        setCurrentIndex((prev) => (prev - 1 + highlights.length) % highlights.length);
+    }, [highlights.length]);
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
+    // Auto-play (7 seconds)
+    useEffect(() => {
+        if (highlights.length === 0 || loading) return;
+        const timer = setInterval(nextSlide, 7000);
+        return () => clearInterval(timer);
+    }, [highlights.length, loading, nextSlide]);
+
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center py-40 bg-white">
             <div className="w-12 h-12 border-t-2 border-black rounded-full animate-spin mb-6"></div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-20">
-            {highlights.map((h, i) => (
-              <GalleryCard 
-                key={h.id} 
-                img={h.img}
-                title={h.title}
-                delay={i * 0.1} 
-              />
-            ))}
-          </div>
-        )}
+        </div>
+    );
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="flex justify-center"
-        >
-          <Link to="/galeria" className="btn-luxury group">
-            Explorar Galería Completa 
-            <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
-          </Link>
-        </motion.div>
-      </div>
-    </section>
-  );
+    if (highlights.length === 0) return null;
+
+    // Helper to get relative items
+    const getItem = (offset) => {
+        const index = (currentIndex + offset + highlights.length) % highlights.length;
+        return highlights[index];
+    };
+
+    return (
+        <section className="py-32 bg-white overflow-hidden">
+            <div className="container mx-auto px-6 text-center">
+                <motion.span
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    className="text-primary-400 font-bold tracking-[0.5em] uppercase text-[10px] block mb-6"
+                >
+                    Visual Storytelling
+                </motion.span>
+                <motion.h2
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    className="text-5xl md:text-7xl mb-24 font-serif uppercase tracking-tighter"
+                >
+                    Eventos <span className="italic font-light">Destacados</span>
+                </motion.h2>
+
+                {/* 3D Stack Carousel */}
+                <div className="relative h-[500px] md:h-[650px] w-full flex items-center justify-center">
+                    
+                    {/* Left (Behind) */}
+                    <div 
+                        className="absolute left-[5%] md:left-[15%] w-[60%] md:w-[40%] aspect-[4/5] opacity-20 scale-75 blur-sm cursor-pointer transition-all duration-700 hidden md:block"
+                        onClick={prevSlide}
+                    >
+                        <img src={getItem(-1).img} className="w-full h-full object-cover border border-black/5" alt="previous" />
+                    </div>
+
+                    {/* Right (Behind) */}
+                    <div 
+                        className="absolute right-[5%] md:right-[15%] w-[60%] md:w-[40%] aspect-[4/5] opacity-20 scale-75 blur-sm cursor-pointer transition-all duration-700 hidden md:block"
+                        onClick={nextSlide}
+                    >
+                        <img src={getItem(1).img} className="w-full h-full object-cover border border-black/5" alt="next" />
+                    </div>
+
+                    {/* Active (Front) */}
+                    <AnimatePresence mode='wait'>
+                        <motion.div
+                            key={currentIndex}
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                            className="relative z-20 w-[85%] md:w-[45%] aspect-[4/5] shadow-2xl overflow-hidden group"
+                        >
+                            <img 
+                                src={highlights[currentIndex].img} 
+                                className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-105" 
+                                alt={highlights[currentIndex].title} 
+                            />
+                            
+                            {/* Title Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-10 text-left">
+                                <span className="text-white/60 text-[10px] uppercase tracking-[0.4em] mb-4">Selected Event Photo</span>
+                                <h3 className="text-white text-3xl font-serif italic mb-6">{highlights[currentIndex].title}</h3>
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
+
+                    {/* Navigation Buttons */}
+                    <button 
+                        onClick={prevSlide}
+                        className="absolute left-4 md:left-10 z-30 w-12 h-12 md:w-16 md:h-16 border border-black/10 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md hover:bg-black hover:text-white transition-all duration-500 shadow-xl"
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
+                    <button 
+                        onClick={nextSlide}
+                        className="absolute right-4 md:right-10 z-30 w-12 h-12 md:w-16 md:h-16 border border-black/10 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md hover:bg-black hover:text-white transition-all duration-500 shadow-xl"
+                    >
+                        <ChevronRight size={24} />
+                    </button>
+                </div>
+
+                {/* Pagination Dots */}
+                <div className="flex justify-center gap-4 mt-16 mb-24">
+                    {highlights.map((_, i) => (
+                        <button
+                            key={i}
+                            onClick={() => setCurrentIndex(i)}
+                            className={`h-1 transition-all duration-500 ${i === currentIndex ? 'w-12 bg-black' : 'w-4 bg-black/10'}`}
+                        />
+                    ))}
+                </div>
+
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    className="flex justify-center"
+                >
+                    <Link to="/galeria" className="btn-luxury group">
+                        Ver Galería Completa <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
+                    </Link>
+                </motion.div>
+            </div>
+        </section>
+    );
 };
 
 export default GalleryHighlights;
