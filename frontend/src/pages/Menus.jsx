@@ -66,7 +66,7 @@ const Menus = () => {
             </div>
             {/* Menu Navigator */}
             <div 
-                className="sticky top-[88px] z-[100] bg-white/95 backdrop-blur-xl border-y border-black/5 py-8 transition-all duration-300 shadow-sm"
+                className="sticky top-[88px] z-[400] bg-white/95 backdrop-blur-xl border-y border-black/5 py-8 transition-all duration-300 shadow-sm sticky-submenu"
             >
                 <div className="container mx-auto px-10 flex flex-wrap justify-center gap-12 md:gap-20">
                     {Object.keys(menuData).map((cat) => (
