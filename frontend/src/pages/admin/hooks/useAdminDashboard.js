@@ -196,7 +196,8 @@ export const useAdminDashboard = () => {
                 id: g.id,
                 title: g.titulo,
                 url: formatImageUrl(g.imagen),
-                category: g.category
+                category: g.categoria,
+                description: g.descripcion
             })));
         } catch (e) { console.error("Error fetching gallery:", e); }
     };
@@ -342,7 +343,7 @@ export const useAdminDashboard = () => {
         const data = new FormData();
         data.append('titulo', formData.get('titulo'));
         data.append('categoria', formData.get('categoria'));
-        data.append('descripcion', 'Imagen exclusiva de Luxury');
+        data.append('descripcion', formData.get('descripcion') || 'Imagen exclusiva de Luxury');
         
         const img = formData.get('imagen');
         if (img && img.size > 0) data.append('imagen', img);
@@ -378,6 +379,7 @@ export const useAdminDashboard = () => {
         const data = new FormData();
         data.append('titulo', galleryData.titulo);
         data.append('categoria', galleryData.categoria);
+        data.append('descripcion', galleryData.descripcion);
         if (galleryData.imagen) {
             data.append('imagen', galleryData.imagen);
         }

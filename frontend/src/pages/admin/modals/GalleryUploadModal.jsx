@@ -41,6 +41,16 @@ const GalleryUploadModal = ({
                             </select>
                         </div>
                         <div className="space-y-4">
+                            <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Descripción Detallada</label>
+                            <textarea 
+                                name="descripcion" 
+                                required 
+                                rows="4"
+                                className="w-full border-b border-black/10 py-4 px-2 focus:border-black outline-none font-light text-lg transition-all bg-transparent resize-none" 
+                                placeholder="Describa los detalles exclusivos de esta captura..."
+                            ></textarea>
+                        </div>
+                        <div className="space-y-4">
                             <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Archivo de Imagen</label>
                             <div className="flex items-center gap-8 p-10 border border-dashed border-luxury-black/10 rounded-xl bg-black/[0.01]">
                                 <ImageIcon className="text-luxury-black opacity-20" size={30} />

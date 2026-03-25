@@ -11,6 +11,7 @@ const GalleryEditModal = ({
     const [formData, setFormData] = useState({
         titulo: '',
         categoria: 'Montaje',
+        descripcion: ''
     });
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -20,6 +21,7 @@ const GalleryEditModal = ({
             setFormData({
                 titulo: editingGallery.title || '',
                 categoria: editingGallery.category || 'Montaje',
+                descripcion: editingGallery.description || ''
             });
             setSelectedFile(null);
             setPreviewUrl(null);
@@ -83,6 +85,19 @@ const GalleryEditModal = ({
                                 <option value="Retrato">Retrato</option>
                                 <option value="Arquitectura">Arquitectura</option>
                             </select>
+                        </div>
+
+                        <div className="space-y-4">
+                            <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Descripción Detallada</label>
+                            <textarea 
+                                name="descripcion" 
+                                value={formData.descripcion}
+                                onChange={handleChange}
+                                required 
+                                rows="4"
+                                className="w-full border-b border-black/10 py-4 px-2 focus:border-black outline-none font-light text-lg transition-all bg-transparent resize-none" 
+                                placeholder="Describa los detalles exclusivos de esta captura..."
+                            ></textarea>
                         </div>
                         
                         <div className="space-y-4">

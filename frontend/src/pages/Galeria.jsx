@@ -17,7 +17,9 @@ const Galeria = () => {
                 const mapped = res.data.map(img => ({
                     id: img.id,
                     url: img.imagen,
-                    title: img.titulo || 'Esencia Luxury'
+                    title: img.titulo || 'Esencia Luxury',
+                    category: img.categoria || 'General',
+                    description: img.descripcion || ''
                 }));
                 setImages(mapped);
             } catch (err) {
@@ -110,9 +112,14 @@ const Galeria = () => {
                             className="max-w-full max-h-full object-contain shadow-2xl"
                         />
 
-                        <div className="absolute bottom-10 left-10 md:left-20">
-                            <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-white/40 block mb-2 px-4 border-l border-white/40">Portafolio</span>
-                            <h2 className="text-white text-4xl md:text-5xl font-serif italic px-4">{selectedImage.title}</h2>
+                        <div className="absolute bottom-10 left-10 md:left-20 max-w-2xl bg-black/20 backdrop-blur-md p-8 rounded-tr-[40px] border-l-2 border-white/40">
+                            <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-white/60 block mb-3">{selectedImage.category}</span>
+                            <h2 className="text-white text-4xl md:text-5xl font-serif italic mb-4">{selectedImage.title}</h2>
+                            {selectedImage.description && (
+                                <p className="text-white/80 text-xs uppercase tracking-[0.2em] font-light leading-relaxed max-w-md">
+                                    {selectedImage.description}
+                                </p>
+                            )}
                         </div>
                     </motion.div>
                 )}
