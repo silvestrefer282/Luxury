@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Clock, Utensils, Shield, User, MapPin, Phone, Star, Info } from 'lucide-react';
+import { X, Check, Clock, Utensils, Shield, User, MapPin, Phone, Star, Info, Search, ChevronDown } from 'lucide-react';
 
 const ReservationModal = ({
     isOpen,
@@ -15,6 +15,27 @@ const ReservationModal = ({
     handleCreateReservation
 }) => {
     const [selectedPackage, setSelectedPackage] = useState(null);
+    const [clientSearch, setClientSearch] = useState('');
+    const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+
+    // Filtrar clientes por búsqueda
+    const filteredClients = clients.filter(c => 
+        c.name.toLowerCase().includes(clientSearch.toLowerCase())
+    );
+
+    // Obtener nombre del cliente seleccionado para el input
+    const selectedClientName = clients.find(c => c.id == reservationForm.cliente)?.name || '';
+
+    // Cerrar dropdown al hacer click fuera
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (isClientDropdownOpen && !e.target.closest('.client-select-container')) {
+                setIsClientDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isClientDropdownOpen]);
 
     // Formato 12h para mostrar en UI
     const format12h = (time24h) => {
@@ -143,15 +164,63 @@ const ReservationModal = ({
                                 <label className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-black text-gray-400 italic">
                                     <User size={12}/> Cliente Titular
                                 </label>
-                                <select 
-                                    required
-                                    value={reservationForm.cliente}
-                                    onChange={(e) => setReservationForm({...reservationForm, cliente: e.target.value})}
-                                    className="w-full border-b border-gray-100 py-4 font-serif text-lg outline-none focus:border-black transition-all"
-                                >
-                                    <option value="">-- Elija un cliente --</option>
-                                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
+                                <div className="relative client-select-container">
+                                    <div 
+                                        onClick={() => setIsClientDropdownOpen(!isClientDropdownOpen)}
+                                        className="w-full border-b border-gray-100 py-4 font-serif text-lg outline-none focus:border-black cursor-pointer flex justify-between items-center group"
+                                    >
+                                        <span className={selectedClientName ? 'text-black' : 'text-gray-400'}>
+                                            {selectedClientName || '-- Elija un cliente --'}
+                                        </span>
+                                        <ChevronDown size={16} className={`text-gray-300 group-hover:text-black transition-transform ${isClientDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </div>
+
+                                    <AnimatePresence>
+                                        {isClientDropdownOpen && (
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 10 }}
+                                                className="absolute z-50 left-0 right-0 top-full mt-2 bg-white border border-gray-100 shadow-2xl rounded-3xl overflow-hidden"
+                                            >
+                                                <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex items-center gap-3">
+                                                    <Search size={14} className="text-gray-400" />
+                                                    <input 
+                                                        autoFocus
+                                                        type="text" 
+                                                        placeholder="Buscar cliente..." 
+                                                        value={clientSearch}
+                                                        onChange={(e) => setClientSearch(e.target.value)}
+                                                        className="bg-transparent border-none outline-none text-xs uppercase tracking-widest font-black w-full"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                </div>
+                                                <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                                    {filteredClients.length > 0 ? (
+                                                        filteredClients.map(c => (
+                                                            <div 
+                                                                key={c.id}
+                                                                onClick={() => {
+                                                                    setReservationForm({...reservationForm, cliente: c.id});
+                                                                    setIsClientDropdownOpen(false);
+                                                                    setClientSearch('');
+                                                                }}
+                                                                className={`p-4 text-sm font-serif hover:bg-black hover:text-white cursor-pointer transition-colors flex justify-between items-center ${reservationForm.cliente == c.id ? 'bg-gray-50' : ''}`}
+                                                            >
+                                                                {c.name}
+                                                                {reservationForm.cliente == c.id && <Check size={14} className="text-black" />}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="p-4 text-[10px] uppercase tracking-widest text-gray-400 text-center font-black">
+                                                            No se encontraron resultados
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
                             </div>
 
                             <div className="space-y-4">
