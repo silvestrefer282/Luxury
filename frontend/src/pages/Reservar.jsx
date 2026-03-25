@@ -551,7 +551,7 @@ const Reservar = () => {
                                     <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">02</span>
                                     <h3 className="font-serif text-4xl uppercase tracking-tight">Logística del Evento</h3>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 bg-white p-12 rounded-[40px] shadow-sm border border-gray-50">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 bg-white p-12 rounded-[40px] shadow-sm border-2 border-black">
                                     <div className="space-y-2">
                                         <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Categoría de Evento</label>
                                         <select name="tipo_evento" value={formData.tipo_evento} onChange={handleChange} required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black transition-colors">
@@ -627,7 +627,7 @@ const Reservar = () => {
                                     </div>
 
                                     {/* Category Navigator for Menu Selection */}
-                                    <div className="bg-white p-6 rounded-full border border-gray-100 shadow-sm flex items-center justify-between mb-12">
+                                    <div className="bg-white p-6 rounded-full border-2 border-black shadow-sm flex items-center justify-between mb-12">
                                         <button
                                             type="button"
                                             onClick={() => setActiveCatIndex(Math.max(0, activeCatIndex - 1))}
@@ -663,12 +663,17 @@ const Reservar = () => {
                                         >
                                             {platillos.filter(p => p.categoria === categorias[activeCatIndex]?.id).map(p => {
                                                 const isSelected = formData.platillos_seleccionados.includes(p.id);
+                                                const hasSelectionInCategory = formData.platillos_seleccionados.some(id => {
+                                                    const plate = platillos.find(item => item.id === id);
+                                                    return plate && plate.categoria === categorias[activeCatIndex]?.id;
+                                                });
+                                                
                                                 return (
                                                     <motion.div
                                                         key={p.id}
                                                         whileTap={{ scale: 0.98 }}
                                                         onClick={() => handlePlatilloToggle(p.id)}
-                                                        className={`cursor-pointer transition-all p-6 rounded-[32px] border-2 flex items-center gap-6 ${isSelected ? 'border-black bg-white shadow-xl scale-[1.02]' : 'border-white bg-white hover:border-gray-100'}`}
+                                                        className={`cursor-pointer transition-all p-6 rounded-[32px] border-2 flex items-center gap-6 ${isSelected ? 'border-black bg-white shadow-xl scale-[1.02] opacity-100' : hasSelectionInCategory ? 'border-transparent bg-white opacity-40 grayscale-[50%]' : 'border-gray-100 bg-white hover:border-black/20 opacity-100'}`}
                                                     >
                                                         <div className={`w-16 h-16 rounded-full overflow-hidden border-2 shadow-inner ${isSelected ? 'border-black' : 'border-gray-50'}`}>
                                                             {p.imagen && <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover" />}
@@ -694,11 +699,12 @@ const Reservar = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {servicios.map(s => {
                                         const isSelected = formData.servicios_adicionales.includes(s.id);
+                                        const hasAnySelected = formData.servicios_adicionales.length > 0;
                                         return (
                                             <div
                                                 key={s.id}
                                                 onClick={() => handleServiceToggle(s.id)}
-                                                className={`p-6 rounded-3xl border-2 transition-all cursor-pointer flex justify-between items-center ${isSelected ? 'border-black bg-white shadow-xl' : 'border-white bg-white hover:border-black/5'}`}
+                                                className={`p-6 rounded-3xl border-2 transition-all cursor-pointer flex justify-between items-center ${isSelected ? 'border-black bg-white shadow-xl opacity-100' : hasAnySelected ? 'border-transparent bg-white opacity-40 scale-[0.98]' : 'border-gray-100 bg-white hover:border-black/20'}`}
                                             >
                                                 <div className="space-y-1">
                                                     <span className="uppercase tracking-[0.2em] font-black text-[9px] block">{s.nombre}</span>
