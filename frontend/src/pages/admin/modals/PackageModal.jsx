@@ -110,20 +110,8 @@ const PackageModal = ({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-10 border-y border-luxury-black/5 py-8">
-                             <div className="space-y-4">
-                                <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Número de Tiempos</label>
-                                <input 
-                                    name="numero_tiempos" 
-                                    type="number" 
-                                    min="0" max="10"
-                                    required
-                                    value={packageForm.numero_tiempos} 
-                                    onChange={handlePackageFormChange}
-                                    className="w-full border-b border-black/10 py-4 px-2 focus:border-black outline-none text-xl font-serif text-luxury-black transition-all" 
-                                />
-                            </div>
-                            <div className="flex items-center gap-6 mt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 border-y border-luxury-black/5 py-8">
+                            <div className="flex items-center gap-6">
                                 <label className="flex items-center gap-4 cursor-pointer group">
                                     <input 
                                         type="checkbox"
@@ -140,6 +128,21 @@ const PackageModal = ({
                                     <span className="text-[10px] uppercase tracking-widest font-bold text-black/60 group-hover:text-black transition-colors">¿Incluye Menú Completo?</span>
                                 </label>
                             </div>
+                            
+                            {packageForm.incluye_menu && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-500">
+                                    <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Número de Tiempos</label>
+                                    <input 
+                                        name="numero_tiempos" 
+                                        type="number" 
+                                        min="1" max="10"
+                                        required={packageForm.incluye_menu}
+                                        value={packageForm.numero_tiempos} 
+                                        onChange={handlePackageFormChange}
+                                        className="w-full border-b border-black/10 py-4 px-2 focus:border-black outline-none text-xl font-serif text-luxury-black transition-all" 
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-4">

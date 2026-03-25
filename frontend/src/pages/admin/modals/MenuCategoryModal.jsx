@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Edit3, Image as ImageIcon } from 'lucide-react';
+import { X, Edit3, Image as ImageIcon, Camera } from 'lucide-react';
 import { menuService } from '../../../services/api';
 
 const MenuCategoryModal = ({
@@ -15,7 +15,7 @@ const MenuCategoryModal = ({
     triggerConfirm
 }) => {
     const [newItemName, setNewItemName] = useState('');
-    const [categoryDesc, setCategoryDesc] = useState(menus[category]?.descripcion || '');
+    const [newItemImage, setNewItemImage] = useState(null);
 
     if (!isOpen) return null;
 
@@ -25,18 +25,35 @@ const MenuCategoryModal = ({
             const formData = new FormData();
             formData.append('categoria', catId);
             formData.append('nombre', newItemName);
-            formData.append('descripcion', ''); // Blind fix for potential backend 500 if missing
+            formData.append('descripcion', ''); 
+            if (newItemImage) {
+                formData.append('imagen', newItemImage);
+            }
 
             try {
                 await menuService.createPlatillo(formData);
                 fetchData();
                 setNewItemName('');
+                setNewItemImage(null);
                 triggerAlert("Platillo Añadido", `El plato '${newItemName}' ha sido integrado con éxito.`);
             } catch (error) {
                 console.error("Error adding item:", error);
                 const detail = error.response?.data?.nombre?.[0] || error.response?.data?.error || "Error interno del servidor (500). Verifique los datos.";
                 triggerAlert("Error de Registro", `No se pudo añadir el platillo. Detalle: ${detail}`);
             }
+        }
+    };
+
+    const handleUpdatePlatilloImage = async (platilloId, file) => {
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('imagen', file);
+        try {
+            await menuService.updatePlatillo(platilloId, formData);
+            fetchData();
+            triggerAlert("Imagen Actualizada", "La imagen del platillo ha sido cargada.");
+        } catch (error) {
+            triggerAlert("Error", "No se pudo cargar la imagen del platillo.");
         }
     };
 
@@ -109,11 +126,33 @@ const MenuCategoryModal = ({
                                 {menus[category]?.items?.map((item, i) => (
                                     <div key={item.id} className="group relative flex items-center border-b border-luxury-black/10 pb-6 hover:border-luxury-black transition-all">
                                         <span className="text-2xl font-serif text-luxury-black opacity-10 mr-10 italic">{i < 9 ? `0${i + 1}` : i + 1}</span>
-                                        <input
-                                            value={item.nombre}
-                                            readOnly
-                                            className="bg-transparent border-none outline-none flex-1 text-2xl font-serif font-light tracking-tight text-luxury-black"
-                                        />
+                                        
+                                        <div className="flex items-center gap-6 flex-1">
+                                            <label className="relative cursor-pointer group/img">
+                                                <div className="w-16 h-16 rounded-full overflow-hidden border border-luxury-black/10 flex items-center justify-center bg-gray-50 transition-all group-hover/img:border-luxury-black">
+                                                    {item.imagen ? (
+                                                        <img src={item.imagen} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Camera size={16} className="text-luxury-gray-mid group-hover/img:text-luxury-black" />
+                                                    )}
+                                                </div>
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center rounded-full transition-opacity">
+                                                    <Camera size={14} className="text-white" />
+                                                </div>
+                                                <input 
+                                                    type="file" 
+                                                    className="hidden" 
+                                                    onChange={(e) => handleUpdatePlatilloImage(item.id, e.target.files[0])}
+                                                />
+                                            </label>
+
+                                            <input
+                                                value={item.nombre}
+                                                readOnly
+                                                className="bg-transparent border-none outline-none flex-1 text-2xl font-serif font-light tracking-tight text-luxury-black"
+                                            />
+                                        </div>
+
                                         <button
                                             onClick={() => handleRemoveItem(category, item.id)}
                                             className="p-2 opacity-0 group-hover:opacity-100 hover:text-red-700 transition-all duration-300"
@@ -126,13 +165,32 @@ const MenuCategoryModal = ({
                         </div>
 
                         <div className="space-y-8 pt-16 border-t border-luxury-black/10">
-                            <div className="flex gap-0 group border-b-2 border-luxury-black/20 focus-within:border-luxury-black transition-all">
+                            <div className="flex items-center gap-6 border-b-2 border-luxury-black/20 focus-within:border-luxury-black transition-all">
+                                <label className="cursor-pointer group/new">
+                                    <div className={`w-14 h-14 rounded-full flex items-center justify-center border-2 transition-all ${newItemImage ? 'border-green-500 bg-green-50' : 'border-dashed border-luxury-black/20 group-hover/new:border-luxury-black'}`}>
+                                        {newItemImage ? (
+                                            <img src={URL.createObjectURL(newItemImage)} className="w-full h-full object-cover rounded-full" />
+                                        ) : (
+                                            <ImageIcon size={18} className="text-luxury-gray-mid group-hover/new:text-luxury-black" />
+                                        )}
+                                    </div>
+                                    <input 
+                                        type="file" 
+                                        className="hidden" 
+                                        onChange={(e) => setNewItemImage(e.target.files[0])}
+                                    />
+                                </label>
                                 <input
                                     placeholder="Nombre del nuevo platillo maestro..."
-                                    className="flex-1 bg-transparent py-8 px-4 text-3xl font-serif text-luxury-black outline-none italic placeholder:text-luxury-gray-mid"
+                                    className="flex-1 bg-transparent py-8 text-3xl font-serif text-luxury-black outline-none italic placeholder:text-luxury-gray-mid"
                                     value={newItemName}
                                     onChange={(e) => setNewItemName(e.target.value)}
                                 />
+                                {newItemImage && (
+                                    <button onClick={() => setNewItemImage(null)} className="text-red-500 hover:text-red-700 p-2">
+                                        <X size={14} />
+                                    </button>
+                                )}
                             </div>
                             <button
                                 onClick={() => handleAddItem(category)}

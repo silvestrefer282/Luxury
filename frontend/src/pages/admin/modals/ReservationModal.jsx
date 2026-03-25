@@ -317,7 +317,14 @@ const ReservationModal = ({
                                                                 onClick={() => togglePlatillo(platillo.id)}
                                                                 className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-all border-2 ${isSelected ? 'border-black bg-black text-white' : 'border-gray-50 bg-white hover:border-gray-200'}`}
                                                             >
-                                                                <span className="text-xs uppercase tracking-widest font-bold">{platillo.nombre}</span>
+                                                                <div className="flex items-center gap-4">
+                                                                    {platillo.imagen && (
+                                                                        <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shadow-sm">
+                                                                            <img src={platillo.imagen} className="w-full h-full object-cover" />
+                                                                        </div>
+                                                                    )}
+                                                                    <span className="text-xs uppercase tracking-widest font-bold">{platillo.nombre}</span>
+                                                                </div>
                                                                 {isSelected && <Check size={14} />}
                                                             </div>
                                                         );

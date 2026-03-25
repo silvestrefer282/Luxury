@@ -241,6 +241,7 @@ export const useAdminDashboard = () => {
             respCats.data.forEach(cat => {
                 menuObj[cat.nombre] = {
                     id: cat.id,
+                    imagen: formatImageUrl(cat.imagen),
                     items: respPlat.data
                         .filter(p => p.categoria === cat.id)
                         .map(p => ({ 

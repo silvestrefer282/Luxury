@@ -9,9 +9,16 @@ const MenuCard = ({ category, menus, setEditingMenuCategory, handleRemoveCategor
 
         <div>
             <div className="flex justify-between items-start mb-12 relative z-10">
-                <div>
-                    <span className="text-[9px] uppercase tracking-[0.4em] text-luxury-gray-mid font-bold block mb-2 italic">Colección</span>
-                    <h3 className="text-4xl font-serif uppercase tracking-tighter text-luxury-black group-hover:translate-x-2 transition-transform duration-500">{category}</h3>
+                <div className="flex items-center gap-6">
+                    {menus[category]?.imagen && (
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden border border-luxury-black/5 shadow-sm">
+                            <img src={menus[category].imagen} className="w-full h-full object-cover" />
+                        </div>
+                    )}
+                    <div>
+                        <span className="text-[9px] uppercase tracking-[0.4em] text-luxury-gray-mid font-bold block mb-2 italic">Colección</span>
+                        <h3 className="text-4xl font-serif uppercase tracking-tighter text-luxury-black group-hover:translate-x-2 transition-transform duration-500">{category}</h3>
+                    </div>
                 </div>
             </div>
 

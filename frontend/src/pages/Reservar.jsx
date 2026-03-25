@@ -637,9 +637,16 @@ const Reservar = () => {
                                             <ChevronLeft size={16} /> Anterior
                                         </button>
 
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-[9px] uppercase tracking-[0.4em] text-gray-400 font-bold mb-1">Categoría {activeCatIndex + 1} de {categorias.length}</span>
-                                            <h4 className="font-serif text-2xl italic text-black">{categorias[activeCatIndex]?.nombre}</h4>
+                                        <div className="flex items-center gap-6">
+                                            {categorias[activeCatIndex]?.imagen && (
+                                                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-black/5 shadow-inner hidden sm:block">
+                                                    <img src={categorias[activeCatIndex].imagen} className="w-full h-full object-cover" alt="" />
+                                                </div>
+                                            )}
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[9px] uppercase tracking-[0.4em] text-gray-400 font-bold mb-1">Categoría {activeCatIndex + 1} de {categorias.length}</span>
+                                                <h4 className="font-serif text-2xl italic text-black">{categorias[activeCatIndex]?.nombre}</h4>
+                                            </div>
                                         </div>
 
                                         <button
