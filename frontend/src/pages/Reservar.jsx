@@ -21,6 +21,7 @@ const Reservar = () => {
     const [isBarFixed, setIsBarFixed] = useState(false);
     const [activeCatIndex, setActiveCatIndex] = useState(0);
     const [errorMsg, setErrorMsg] = useState('');
+    const [successModal, setSuccessModal] = useState(false);
 
     const notify = (msg) => {
         setErrorMsg(msg);
@@ -227,8 +228,8 @@ const Reservar = () => {
             delete payload.notas;
 
             await reservacionService.create(payload);
-            notify("¡Reservación realizada con éxito!");
-            setTimeout(() => navigate('/'), 2000);
+            setSuccessModal(true);
+            setTimeout(() => navigate('/mis-reservas'), 3000);
         } catch (error) {
             console.error("DEBUG - Error response data:", error.response?.data);
             const serverError = error.response?.data?.error ||
@@ -758,6 +759,22 @@ const Reservar = () => {
                             <X size={14} />
                         </button>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal de Éxito de Reservación */}
+            <AnimatePresence>
+                {successModal && (
+                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white rounded-[40px] p-16 max-w-lg w-full text-center space-y-8 shadow-2xl border border-black/10">
+                            <CheckCircle2 size={80} className="mx-auto text-black" strokeWidth={1} />
+                            <div>
+                                <h2 className="text-5xl font-serif italic mb-4">¡Reserva Exitosa!</h2>
+                                <p className="text-[10px] uppercase tracking-[0.3em] font-black text-black/40 leading-loose">Tu evento ha sido agendado. Redirigiendo a tus reservaciones...</p>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
         </div>
