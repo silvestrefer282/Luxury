@@ -484,6 +484,23 @@ export const useAdminDashboard = () => {
         );
     };
 
+    const handleDeleteContract = async (id) => {
+        triggerConfirm(
+            "Anular Contrato",
+            "¿Desea eliminar este acuerdo legal y sus registros asociados? Esta acción no se puede deshacer.",
+            async () => {
+                try {
+                    await contratoService.delete(id);
+                    await Promise.all([fetchContracts(), fetchReservations()]);
+                    triggerAlert("Contrato Eliminado", "El acuerdo legal ha sido removido del sistema exitosamente.");
+                } catch (error) {
+                    triggerAlert("Error de Registro", "Hubo un problema al intentar retirar el contrato.");
+                }
+            },
+            "Anular Contrato"
+        );
+    };
+
     const handleApproveTestimonio = async (id) => {
         triggerConfirm(
             "Difundir Reseña",
@@ -891,7 +908,7 @@ export const useAdminDashboard = () => {
         handleDeleteTestimonio, handleCancelReservation, handleConfirmReservation, handleCreateContract,
         handleCreatePayment, handleCreateReservation, handleCreateAdicional,
         handleUpdateAdicional, handleDeleteAdicional, handleUpdateUserRole,
-        handleToggleUserStatus, handleDeleteUser, handleCreateUser, resetPackageForm, 
+        handleToggleUserStatus, handleDeleteUser, handleCreateUser, handleDeleteContract, resetPackageForm, 
         resetAdicionalForm, resetUserForm, handleUpdateConfig, handleConfigChange,
         normalizeText, formatImageUrl, handleRenameCategory, handleRemoveItem, handleRemoveCategory, handleCreateCategory
     };

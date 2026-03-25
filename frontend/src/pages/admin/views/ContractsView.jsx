@@ -9,6 +9,7 @@ const ContractsView = ({
     reservas, 
     fetchData,
     setSelectedContractForPayments,
+    handleDeleteContract,
     searchTerm,
     normalizeText,
     contractFilter,
@@ -93,12 +94,13 @@ const ContractsView = ({
                                 >
                                     <Printer size={16} />
                                 </button>
-                                <button onClick={async () => {
-                                    if(window.confirm("¿Eliminar este contrato?")) {
-                                        await contratoService.delete(c.id);
-                                        fetchData();
-                                    }
-                                }} className="p-4 border border-luxury-black/5 text-luxury-black hover:bg-red-600 hover:text-white transition-all group-hover:bg-white/10 group-hover:text-white group-hover:hover:bg-red-600 rounded-xl"><Trash2 size={16} /></button>
+                                <button 
+                                    onClick={() => handleDeleteContract(c.id)} 
+                                    className="p-4 border border-luxury-black/5 text-luxury-black hover:bg-red-600 hover:text-white transition-all group-hover:bg-white/10 group-hover:text-white group-hover:hover:bg-red-600 rounded-xl"
+                                    title="Anular Contrato"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
                             </td>
                         </tr>
                     ))}
