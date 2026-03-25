@@ -29,7 +29,7 @@ const ContractsView = ({
 
     return (
     <div className="space-y-16 animate-in fade-in slide-in-from-bottom-5 duration-700">
-        <div className="flex justify-start md:justify-end items-center mb-10 border-b border-luxury-black pb-8 overflow-x-auto">
+        <div className="sticky top-[-1.5rem] md:top-[-4rem] bg-[#fafafa] z-30 flex justify-start md:justify-end items-center mb-10 border-b border-luxury-black pb-8 pt-4 overflow-x-auto shadow-sm transition-all">
             <div className="flex gap-4 min-w-max pb-2 md:pb-0">
                 {states.map(state => (
                     <button

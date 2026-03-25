@@ -29,7 +29,7 @@ const ReservationsView = ({
 
     return (
     <div className="space-y-16 animate-in fade-in slide-in-from-right-5 duration-700">
-        <div className="flex justify-start md:justify-end items-end mb-16 border-b-2 border-luxury-black pb-12 overflow-x-auto">
+        <div className="sticky top-[-1.5rem] md:top-[-4rem] bg-[#fafafa] z-30 flex justify-start md:justify-end items-end mb-16 border-b-2 border-luxury-black pb-12 pt-4 overflow-x-auto shadow-sm transition-all">
             <div className="flex gap-4 min-w-max pb-2 md:pb-0">
                 {['Todas', 'Confirmadas', 'Pendientes', 'Canceladas']
                     .filter(f => userRole !== 'encargado' || f !== 'Canceladas')
