@@ -500,7 +500,7 @@ const Reservar = () => {
 
                                                 <div className="space-y-4 text-[11px] uppercase tracking-widest text-gray-400 font-bold flex flex-col items-center">
                                                     <div className="flex items-center gap-3"><Clock size={14} className="text-black" /> {p.duracion_horas} Horas</div>
-                                                    <div className="flex items-center gap-3"><Users size={14} className="text-black" /> {p.capacidad_personas} Pax</div>
+                                                    <div className="flex items-center gap-3"><Users size={14} className="text-black" /> {p.capacidad_personas} Personas</div>
                                                     {p.incluye_menu && <div className="text-black underline underline-offset-4 flex items-center gap-2"><Utensils size={14} /> {p.numero_tiempos} Tiempos</div>}
                                                 </div>
 

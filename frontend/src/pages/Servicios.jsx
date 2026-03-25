@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Music, Sparkles, Clock, ArrowRight, CheckCircle2, Utensils, Layout } from 'lucide-react';
 import { servicioService } from '../services/api';
 
-const ServiceCard = ({ title, description, image, icon: Icon, price, delay, category }) => (
+const ServiceCard = ({ title, description, image, icon: Icon, price, delay, category, onImageClick }) => (
     <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -13,15 +13,21 @@ const ServiceCard = ({ title, description, image, icon: Icon, price, delay, cate
         viewport={{ once: true }}
         className="group relative bg-white rounded-[2.5rem] overflow-hidden border border-black hover:border-accent/30 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/5 flex flex-col"
     >
-        <div className="relative h-72 overflow-hidden">
+        <div 
+            className="relative aspect-[16/10] overflow-hidden cursor-zoom-in"
+            onClick={() => onImageClick(image || "/images/placeholder.png")}
+        >
             <img
                 src={image || "/images/placeholder.png"}
                 alt={title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-8">
-                <p className="text-white/90 text-sm font-medium">Desde ${Number(price).toLocaleString()}</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            <div className="absolute bottom-6 right-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                <p className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-black text-[10px] uppercase tracking-widest font-black shadow-xl">Ver Imagen</p>
             </div>
+
             <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-lg text-accent">
                 <Icon size={24} />
             </div>
@@ -31,7 +37,10 @@ const ServiceCard = ({ title, description, image, icon: Icon, price, delay, cate
         </div>
 
         <div className="p-8 flex-1 flex flex-col">
-            <h3 className="text-2xl font-serif mb-3 group-hover:text-accent transition-colors duration-300">{title}</h3>
+            <div className="flex justify-between items-start mb-4">
+                <h3 className="text-2xl font-serif group-hover:text-accent transition-colors duration-300">{title}</h3>
+                <span className="text-accent font-bold text-lg">${Number(price).toLocaleString()}</span>
+            </div>
             <p className="text-primary-500 leading-relaxed line-clamp-3">
                 {description || "Servicio premium diseñado para elevar la calidad y sofisticación de su evento."}
             </p>
@@ -42,6 +51,7 @@ const ServiceCard = ({ title, description, image, icon: Icon, price, delay, cate
 function Servicios() {
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     const getIconForCategory = (category) => {
         switch (category) {
@@ -116,12 +126,47 @@ function Servicios() {
                                     price={service.precio_unitario}
                                     category={service.categoria}
                                     delay={index * 0.1}
+                                    onImageClick={setSelectedImage}
                                 />
                             ))}
                         </div>
                     )}
                 </div>
             </section>
+
+            {/* Fullscreen Preview */}
+            <AnimatePresence>
+                {selectedImage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setSelectedImage(null)}
+                        className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 md:p-10"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="relative max-w-7xl max-h-[90vh] w-full flex items-center justify-center"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <img 
+                                src={selectedImage} 
+                                alt="Service preview" 
+                                className="max-w-full max-h-[90vh] object-contain shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/10"
+                            />
+                            <button 
+                                onClick={() => setSelectedImage(null)}
+                                className="absolute -top-12 right-0 md:-right-12 text-white/50 hover:text-white transition-colors p-2"
+                            >
+                                <Sparkles size={32} />
+                                <span className="block text-[10px] uppercase tracking-widest mt-1">Cerrar</span>
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Trust Section */}
             <section className="py-24 bg-primary-900 overflow-hidden relative">

@@ -279,7 +279,7 @@ const MisReservas = () => {
                                         <Users className="text-black/40" size={18} />
                                         <div>
                                             <p className="text-[9px] uppercase tracking-widest text-black/40 font-bold mb-1">Invitados</p>
-                                            <p className="text-sm font-black text-black">{selectedReserva.num_personas} Pax</p>
+                                            <p className="text-sm font-black text-black">{selectedReserva.num_personas} Personas</p>
                                         </div>
                                     </div>
                                     <div className="bg-black/5 p-4 md:p-5 rounded-2xl flex items-start gap-3 flex-col sm:flex-row sm:items-center">

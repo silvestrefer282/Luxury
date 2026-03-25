@@ -70,7 +70,7 @@ const PackageModal = ({
                                 />
                             </div>
                             <div className="space-y-4">
-                                <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Capacidad (Pax)</label>
+                                <label className="text-[10px] uppercase tracking-widest font-bold text-black/60">Capacidad (Personas)</label>
                                 <input 
                                     name="capacity" 
                                     type="number" 

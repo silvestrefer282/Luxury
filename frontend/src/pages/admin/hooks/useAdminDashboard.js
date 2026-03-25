@@ -350,12 +350,14 @@ export const useAdminDashboard = () => {
         if (img && img.size > 0) data.append('imagen', img);
 
         try {
-            await galeriaService.create(data);
+            const resp = await galeriaService.create(data);
             await fetchGallery();
             setIsAddingGallery(false);
             triggerAlert("Imagen Agregada", "La nueva imagen ha sido integrada en la galería exitosamente");
         } catch (error) {
-            triggerAlert("Reserva del Sistema", "No se pudo procesar la carga de la imagen en este momento.");
+            console.error("Gallery create error:", error.response?.data || error);
+            const detail = error.response?.data?.error || "No se pudo procesar la carga de la imagen.";
+            triggerAlert("Error de Carga", detail);
         }
     };
 
@@ -407,8 +409,8 @@ export const useAdminDashboard = () => {
         data.append('servicios_incluidos', formData.get('includedServices'));
         data.append('notas', formData.get('notes'));
         data.append('descripcion', formData.get('description'));
-        data.append('numero_tiempos', packageForm.numero_tiempos || 0);
-        data.append('incluye_menu', packageForm.incluye_menu ? 'true' : 'false');
+        data.append('numero_tiempos', formData.get('numero_tiempos') || 0);
+        data.append('incluye_menu', formData.get('incluye_menu') === 'on' ? 'true' : 'false');
         
         if (coverFile) {
             data.append('imagen', coverFile);
@@ -441,8 +443,8 @@ export const useAdminDashboard = () => {
         data.append('servicios_incluidos', formData.get('includedServices'));
         data.append('notas', formData.get('notes'));
         data.append('descripcion', formData.get('description'));
-        data.append('numero_tiempos', packageForm.numero_tiempos || 0);
-        data.append('incluye_menu', packageForm.incluye_menu ? 'true' : 'false');
+        data.append('numero_tiempos', formData.get('numero_tiempos') || 0);
+        data.append('incluye_menu', formData.get('incluye_menu') === 'on' ? 'true' : 'false');
         
         if (coverFile) data.append('imagen', coverFile);
         

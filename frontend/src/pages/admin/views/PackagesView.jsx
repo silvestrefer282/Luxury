@@ -38,7 +38,7 @@ const PackagesView = ({
                                 </div>
                                 <div className="flex items-baseline justify-between border-t border-dotted border-luxury-black/10 pt-4">
                                     <p className="text-[10px] uppercase tracking-[0.4em] text-luxury-gray-mid font-black">Aforo Máximo</p>
-                                    <p className="text-2xl font-serif text-luxury-black">{pkg.capacity} <span className="text-xs">Pax</span></p>
+                                    <p className="text-2xl font-serif text-luxury-black">{pkg.capacity} <span className="text-xs">Personas</span></p>
                                 </div>
                                 <div className="flex items-baseline justify-between border-t border-dotted border-luxury-black/10 pt-4">
                                     <p className="text-[10px] uppercase tracking-[0.4em] text-luxury-gray-mid font-black">Tiempos</p>
