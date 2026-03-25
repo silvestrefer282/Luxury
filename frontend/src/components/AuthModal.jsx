@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Mail, Lock, User, ArrowRight, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
+import TerminosModal from '../pages/Terminos';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     const navigate = useNavigate();
@@ -14,8 +15,9 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     const [error, setError] = useState(null);
     const [successMsg, setSuccessMsg] = useState(null);
     
-    // Estado para el checkbox de términos
+    // Estado para el checkbox de términos y el modal
     const [aceptaTerminos, setAceptaTerminos] = useState(false);
+    const [showTerminos, setShowTerminos] = useState(false);
 
     const [formData, setFormData] = useState({
         email: '',
@@ -71,6 +73,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
         // Validación extra para los términos antes de disparar el loading
         if (mode === 'register' && !aceptaTerminos) {
+            alert("Debes aceptar los Términos y Condiciones para crear tu cuenta en SIRLUX.");
             setError("Debes aceptar los términos y condiciones para continuar.");
             return;
         }
@@ -387,7 +390,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                                                             </div>
                                                         </div>
                                                         <span className="text-[10px] uppercase tracking-widest font-bold text-black/40 group-hover:text-black transition-colors italic">
-                                                            Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer" className="underline decoration-black/20 underline-offset-4 hover:decoration-black">Términos y Condiciones</a>
+                                                            Acepto los <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowTerminos(true); }} className="underline decoration-black/20 underline-offset-4 hover:decoration-black">Términos y Condiciones</button>
                                                         </span>
                                                     </label>
                                                 </div>
@@ -428,6 +431,17 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                             )}
                         </div>
                     </motion.div>
+                    
+                    {/* Renderizar el Modal de Términos dentro de este contexto */}
+                    <TerminosModal 
+                        isOpen={showTerminos} 
+                        onClose={() => setShowTerminos(false)} 
+                        onAccept={() => {
+                            setAceptaTerminos(true);
+                            setShowTerminos(false);
+                            setError(null);
+                        }}
+                    />
                 </motion.div>
             )}
         </AnimatePresence>

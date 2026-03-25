@@ -269,31 +269,15 @@ const Reservar = () => {
     const endTimeFormatted = calculateEndTime();
 
     const getAvailableHours = () => {
-        if (!config || !selectedPkg) return [];
         const hours = [];
+        // The user explicitly requested start times to be strictly between 10:00 AM and 9:00 PM (21:00)
+        const minStart = 10 * 60; // 10:00 AM
+        const maxStart = 21 * 60; // 9:00 PM
+        
+        const totalDuration = (selectedPkg?.duracion_horas || 0) + (formData.horas_adicionales || 0);
+        const cleaning = config ? (Number(config.hora_limpieza) || 0) : 0;
 
-        const [ah, am] = config.hora_apertura.split(':').map(Number);
-        let [ch, cm] = config.hora_cierre.split(':').map(Number);
-
-        // Fix mistaken 12:00 PM configuration for midnight
-        if (ch === 12 && cm === 0 && ah >= 6) {
-            ch = 0;
-        }
-
-        let apertureMin = ah * 60 + am;
-        let closureMin = ch * 60 + cm;
-
-        // Soporte para horarios que cruzan la medianoche
-        if (closureMin <= apertureMin) {
-            closureMin += 1440;
-        }
-
-        const totalDuration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
-        const cleaning = Number(config.hora_limpieza) || 0;
-
-        const startLimit = closureMin - (totalDuration * 60);
-
-        for (let t = apertureMin; t <= startLimit; t += 30) {
+        for (let t = minStart; t <= maxStart; t += 30) {
             const h = Math.floor(t / 60) % 24;
             const m = t % 60;
             const time24 = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
@@ -302,19 +286,22 @@ const Reservar = () => {
             const dtStartNueva = t;
             const dtFinNueva = t + (totalDuration * 60);
 
-            const isOccupied = bookedSlots.some(slot => {
-                const [sh, sm] = slot.inicio.split(':').map(Number);
-                const [fh, fm] = slot.fin.split(':').map(Number);
-                let sMin = sh * 60 + sm;
-                let fMin = fh * 60 + fm;
-                if (fMin <= sMin) fMin += 1440;
+            let isOccupied = false;
+            if (bookedSlots && bookedSlots.length > 0) {
+                isOccupied = bookedSlots.some(slot => {
+                    const [sh, sm] = slot.inicio.split(':').map(Number);
+                    const [fh, fm] = slot.fin.split(':').map(Number);
+                    let sMin = sh * 60 + sm;
+                    let fMin = fh * 60 + fm;
+                    if (fMin <= sMin) fMin += 1440;
 
-                // Block = [sMin - cleaning, fMin + cleaning]
-                const blockS = sMin - cleaning;
-                const blockF = fMin + cleaning;
+                    // Block = [sMin - cleaning, fMin + cleaning]
+                    const blockS = sMin - cleaning;
+                    const blockF = fMin + cleaning;
 
-                return dtStartNueva < blockF && dtFinNueva > blockS;
-            });
+                    return dtStartNueva < blockF && dtFinNueva > blockS;
+                });
+            }
 
             if (!isOccupied) {
                 hours.push({
@@ -328,22 +315,13 @@ const Reservar = () => {
 
     const availableHours = getAvailableHours();
 
-    // Efecto para ajustar la hora de inicio si la actual deja de ser válida
+    // Efecto para ajustar la hora de inicio si se pierde el valor (fallback a 14:00 o la primera disponible)
     useEffect(() => {
-        if (availableHours.length > 0) {
-            const isCurrentValid = availableHours.some(h => h.value === formData.hora_inicio);
-            if (!isCurrentValid && formData.hora_inicio) {
-                // ALERTA: Notificar que la duración excedió el límite para la hora actual
-                notify(`Al añadir tiempo extra, el evento terminaría después del cierre del salón (${format12h(config.hora_cierre)}). Por favor ajusta la hora de inicio o las horas adicionales.`);
-
-                const preferred = availableHours.find(h => h.value === '14:00') || availableHours[0];
-                setFormData(prev => ({ ...prev, hora_inicio: preferred.value }));
-            }
-        } else if (selectedPkg && config && (formData.fecha_evento || formData.tipo_evento)) {
-            const duration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
-            notify(`Atención: El paquete seleccionado con tiempo extra (${duration}h) excede el horario total de operación del salón (${format12h(config.hora_apertura)} a ${format12h(config.hora_cierre)}).`);
+        if (availableHours.length > 0 && !availableHours.some(h => h.value === formData.hora_inicio)) {
+            const preferred = availableHours.find(h => h.value === '14:00') || availableHours[0];
+            setFormData(prev => ({ ...prev, hora_inicio: preferred.value }));
         }
-    }, [availableHours, formData.hora_inicio, selectedPkg, config, formData.horas_adicionales, formData.fecha_evento, formData.tipo_evento]);
+    }, [availableHours, formData.hora_inicio]);
 
     // EFECTO: Sincronizar hora_fin automáticamente en el formData
     useEffect(() => {

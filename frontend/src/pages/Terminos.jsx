@@ -2,11 +2,11 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShieldCheck, ScrollText } from 'lucide-react';
 
-const TerminosModal = ({ isOpen, onClose }) => {
+const TerminosModal = ({ isOpen, onClose, onAccept }) => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 md:p-6">
           {/* Backdrop / Fondo oscuro */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -110,10 +110,13 @@ const TerminosModal = ({ isOpen, onClose }) => {
               </a>
 
               <button 
-                onClick={onClose}
+                onClick={() => {
+                  if (onAccept) onAccept();
+                  else onClose();
+                }}
                 className="bg-black text-white px-8 py-3 rounded-full text-[10px] uppercase tracking-widest font-bold hover:bg-black/80 transition-all"
               >
-                Entendido
+                {onAccept ? "Aceptar Términos" : "Entendido"}
               </button>
 
             </div>
