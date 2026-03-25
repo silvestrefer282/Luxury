@@ -274,7 +274,7 @@ export const useAdminDashboard = () => {
             const resp = await clienteService.getAll();
             setClients(resp.data.map(c => ({
                 id: c.id,
-                name: c.usuario_detalle?.get_full_name || 'N/A'
+                name: `${c.usuario_detalle?.first_name || ''} ${c.usuario_detalle?.apellido_paterno || ''}`.trim() || 'S/N'
             })));
         } catch (e) { console.error("Error fetching clients:", e); }
     };

@@ -78,6 +78,25 @@ const ReservationModal = ({
         }
     }, [reservationForm.paquete, packages]);
 
+    // Automatizar sincronización de Hora Fin en el estado
+    useEffect(() => {
+        if (reservationForm.paquete && reservationForm.hora_inicio) {
+            const pkg = packages.find(p => p.id === parseInt(reservationForm.paquete));
+            if (pkg) {
+                const totalDuration = Number(pkg.duration || pkg.duracion_horas) + Number(reservationForm.horas_adicionales || 0);
+                const [h, m] = reservationForm.hora_inicio.split(':').map(Number);
+                
+                const endH = (h + Math.floor(totalDuration)) % 24;
+                const endM = (m + (totalDuration % 1) * 60) % 60;
+                
+                const timeStr = `${String(endH).padStart(2, '0')}:${String(Math.round(endM)).padStart(2, '0')}`;
+                if (reservationForm.hora_fin !== timeStr) {
+                    setReservationForm(prev => ({ ...prev, hora_fin: timeStr }));
+                }
+            }
+        }
+    }, [reservationForm.paquete, reservationForm.hora_inicio, reservationForm.horas_adicionales, packages]);
+
     if (!isOpen) return null;
 
     const togglePlatillo = (platilloId) => {
