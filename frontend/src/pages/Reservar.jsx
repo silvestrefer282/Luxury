@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { paqueteService, reservacionService, servicioService, menuService, configuracionService } from '../services/api';
-import { Calendar, Users, Info, Star, Shield, ArrowRight, Clock, MapPin, Phone, Utensils, AlertCircle, X, ChevronLeft, ChevronRight, CheckCircle, Loader2 } from 'lucide-react';
+import { Calendar, Users, Info, Star, Shield, ArrowRight, Clock, MapPin, Phone, Utensils, AlertCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Reservar = () => {
@@ -15,12 +15,12 @@ const Reservar = () => {
     const [categorias, setCategorias] = useState([]);
     const [platillos, setPlatillos] = useState([]);
     const [config, setConfig] = useState(null);
+    const [bookedSlots, setBookedSlots] = useState([]);
     const [reservacionesActivas, setReservacionesActivas] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isBarFixed, setIsBarFixed] = useState(false);
     const [activeCatIndex, setActiveCatIndex] = useState(0);
     const [errorMsg, setErrorMsg] = useState('');
-    const [showSuccess, setShowSuccess] = useState(false);
 
     const notify = (msg) => {
         setErrorMsg(msg);
@@ -68,27 +68,32 @@ const Reservar = () => {
         fetchAll();
     }, []);
 
+    // Fetch occupied slots for selected date
+    useEffect(() => {
+        const fetchAvailability = async () => {
+            if (!formData.fecha_evento) return;
+            try {
+                const response = await reservacionService.getDisponibilidad(formData.fecha_evento);
+                setBookedSlots(response.data.ocupado || []);
+            } catch (err) {
+                console.error("Error fetching date availability:", err);
+            }
+        };
+        fetchAvailability();
+    }, [formData.fecha_evento]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
-        
-        // Validación de teléfono: Solo números y máximo 10 dígitos
-        if (name === 'telefono_contacto') {
-            const digitsOnly = value.replace(/\D/g, '');
-            if (digitsOnly.length <= 10) {
-                setFormData(prev => ({ ...prev, [name]: digitsOnly }));
-            }
-            return;
-        }
 
         if (name === 'fecha_evento') {
-            const isBooked = reservacionesActivas.some(r => r.fecha === value && r.estado !== 'Cancelada');
+            const isBooked = reservacionesActivas.some(r => r.fecha === value);
             if (isBooked) {
                 notify("Esta fecha ya se encuentra reservada. Por favor, selecciona otro día.");
                 setFormData(prev => ({ ...prev, [name]: '' }));
                 return;
             }
         }
-        
+
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -109,7 +114,7 @@ const Reservar = () => {
 
         setFormData(prev => {
             let current = [...prev.platillos_seleccionados];
-            
+
             // Si ya está seleccionado, lo quitamos
             if (current.includes(id)) {
                 return { ...prev, platillos_seleccionados: current.filter(pId => pId !== id) };
@@ -140,7 +145,7 @@ const Reservar = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!user || (!user.cliente_id && user.rol !== 'Administrador')) {
             notify("Debes iniciar sesión para reservar.");
             return;
@@ -156,30 +161,30 @@ const Reservar = () => {
             const start = formData.hora_inicio;
             const pkg = paquetes.find(p => p.id === formData.paquete);
             const totalDuration = (pkg?.duracion_horas || 0) + (formData.horas_adicionales || 0);
-            
+
             const [sh, sm] = start.split(':').map(Number);
             let startTotal = sh * 60 + sm;
-            
+
             const [ah, am] = config.hora_apertura.split(':').map(Number);
             const apertureTotal = ah * 60 + am;
-            
+
             let [ch, cm] = config.hora_cierre.split(':').map(Number);
-            
+
             // Fix mistaken 12:00 PM configuration for midnight
             if (ch === 12 && cm === 0 && ah >= 6) {
                 ch = 0;
             }
-            
+
             let closureTotal = ch * 60 + cm;
-            
+
             if (closureTotal <= apertureTotal) {
                 closureTotal += 1440;
             }
-            
+
             if (startTotal < apertureTotal) {
                 startTotal += 1440;
             }
-            
+
             const endTotal = startTotal + (totalDuration * 60);
 
             if (startTotal < apertureTotal) {
@@ -196,18 +201,18 @@ const Reservar = () => {
         try {
             // Asegurar que el ID del cliente existe
             const clienteId = user.cliente_id;
-            
+
             if (!clienteId) {
                 notify("Error: No se encontró un perfil de cliente asociado a tu cuenta. Intenta cerrar sesión y volver a entrar.");
                 setLoading(false);
                 return;
             }
 
-            const pkg = paquetes.find(p => p.id === formData.paquete);
-            const totalDuration = (pkg?.duracion_horas || 0) + (formData.horas_adicionales || 0);
-            const [sh, sm] = formData.hora_inicio.split(':').map(Number);
-            const endH = (sh + totalDuration) % 24;
-            const horaFinCalculada = `${endH.toString().padStart(2, '0')}:${sm.toString().padStart(2, '0')}`;
+            // Calcular hora_fin real en formato 24h
+            const [h, m] = formData.hora_inicio.split(':').map(Number);
+            const totalDuration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
+            const endH = (h + totalDuration) % 24;
+            const horaFinCalculada = `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 
             const payload = {
                 ...formData,
@@ -216,36 +221,21 @@ const Reservar = () => {
                 cliente: clienteId,
                 observaciones: `Evento: ${formData.tipo_evento}. Festejado: ${formData.nombre_festejado}. Notas: ${formData.notas}`
             };
+
+            // Eliminar campos que no existen en el modelo del backend para evitar errores 400
+            delete payload.tipo_evento;
+            delete payload.notas;
+
             await reservacionService.create(payload);
-            setShowSuccess(true);
-            setTimeout(() => {
-                setShowSuccess(false);
-                navigate('/');
-            }, 3500);
+            notify("¡Reservación realizada con éxito!");
+            setTimeout(() => navigate('/'), 2000);
         } catch (error) {
-            console.error("Backend Error:", error);
-            console.error("Response Data:", error.response?.data);
-            
-            let msg = "Error al procesar la reserva. Verifica disponibilidad.";
-            if (error.response?.data) {
-                const data = error.response.data;
-                if (typeof data === 'string') {
-                    msg = data;
-                } else if (data.error && typeof data.error === 'string') {
-                    msg = data.error;
-                } else if (data.non_field_errors) {
-                    msg = Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors;
-                } else if (typeof data === 'object') {
-                    // Get the first field entry to show as error
-                    const firstKey = Object.keys(data)[0];
-                    if (firstKey) {
-                        const firstError = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
-                        // If it's a list like "Este campo es requerido."
-                        msg = typeof firstError === 'string' ? `${firstKey}: ${firstError}` : msg;
-                    }
-                }
-            }
-            notify(msg);
+            console.error("DEBUG - Error response data:", error.response?.data);
+            const serverError = error.response?.data?.error ||
+                (error.response?.data && typeof error.response.data === 'object'
+                    ? JSON.stringify(error.response.data)
+                    : null);
+            notify(serverError || "Error al procesar la reserva. Verifica disponibilidad.");
         } finally {
             setLoading(false);
         }
@@ -253,19 +243,9 @@ const Reservar = () => {
 
     const selectedPkg = paquetes.find(p => p.id == formData.paquete);
     const selectedServices = servicios.filter(s => formData.servicios_adicionales.some(id => id == s.id));
-    
-    // Safety convert to floats to prevent NaN errors resolving to $0
-    const parseSafe = (val) => {
-        if (!val) return 0;
-        const parsed = parseFloat(val.toString().replace(/,/g, ''));
-        return isNaN(parsed) ? 0 : parsed;
-    };
 
-    const extraHoursCost = (formData.horas_adicionales || 0) * parseSafe(selectedPkg?.precio_hora_adicional);
-    const servicesCost = selectedServices.reduce((sum, s) => sum + parseSafe(s.precio_unitario), 0);
-    const packageCost = parseSafe(selectedPkg?.precio_base);
-    
-    const totalPrice = packageCost + extraHoursCost + servicesCost;
+    const extraHoursCost = (formData.horas_adicionales || 0) * (Number(selectedPkg?.precio_hora_adicional) || 0);
+    const totalPrice = (Number(selectedPkg?.precio_base) || 0) + extraHoursCost + selectedServices.reduce((sum, s) => sum + Number(s.precio_unitario || 0), 0);
 
     const format12h = (time24) => {
         if (!time24) return '--:--';
@@ -289,32 +269,82 @@ const Reservar = () => {
     const endTimeFormatted = calculateEndTime();
 
     const getAvailableHours = () => {
+        if (!config || !selectedPkg) return [];
         const hours = [];
-        // The user explicitly requested start times to be strictly between 10:00 AM and 9:00 PM (21:00)
-        const minStart = 10 * 60; // 10:00 AM
-        const maxStart = 21 * 60; // 9:00 PM
-        
-        for (let t = minStart; t <= maxStart; t += 30) {
+
+        const [ah, am] = config.hora_apertura.split(':').map(Number);
+        let [ch, cm] = config.hora_cierre.split(':').map(Number);
+
+        // Fix mistaken 12:00 PM configuration for midnight
+        if (ch === 12 && cm === 0 && ah >= 6) {
+            ch = 0;
+        }
+
+        let apertureMin = ah * 60 + am;
+        let closureMin = ch * 60 + cm;
+
+        // Soporte para horarios que cruzan la medianoche
+        if (closureMin <= apertureMin) {
+            closureMin += 1440;
+        }
+
+        const totalDuration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
+        const cleaning = Number(config.hora_limpieza) || 0;
+
+        const startLimit = closureMin - (totalDuration * 60);
+
+        for (let t = apertureMin; t <= startLimit; t += 30) {
             const h = Math.floor(t / 60) % 24;
             const m = t % 60;
             const time24 = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-            hours.push({
-                value: time24,
-                label: format12h(time24)
+
+            // CHECK AGAINST BOOKED SLOTS
+            const dtStartNueva = t;
+            const dtFinNueva = t + (totalDuration * 60);
+
+            const isOccupied = bookedSlots.some(slot => {
+                const [sh, sm] = slot.inicio.split(':').map(Number);
+                const [fh, fm] = slot.fin.split(':').map(Number);
+                let sMin = sh * 60 + sm;
+                let fMin = fh * 60 + fm;
+                if (fMin <= sMin) fMin += 1440;
+
+                // Block = [sMin - cleaning, fMin + cleaning]
+                const blockS = sMin - cleaning;
+                const blockF = fMin + cleaning;
+
+                return dtStartNueva < blockF && dtFinNueva > blockS;
             });
+
+            if (!isOccupied) {
+                hours.push({
+                    value: time24,
+                    label: format12h(time24)
+                });
+            }
         }
         return hours;
     };
 
     const availableHours = getAvailableHours();
 
-    // Efecto para ajustar la hora de inicio si se pierde el valor (fallback a 14:00)
+    // Efecto para ajustar la hora de inicio si la actual deja de ser válida
     useEffect(() => {
-        if (!formData.hora_inicio && availableHours.length > 0) {
-            const preferred = availableHours.find(h => h.value === '14:00') || availableHours[0];
-            setFormData(prev => ({ ...prev, hora_inicio: preferred.value }));
+        if (availableHours.length > 0) {
+            const isCurrentValid = availableHours.some(h => h.value === formData.hora_inicio);
+            if (!isCurrentValid && formData.hora_inicio) {
+                // ALERTA: Notificar que la duración excedió el límite para la hora actual
+                notify(`Al añadir tiempo extra, el evento terminaría después del cierre del salón (${format12h(config.hora_cierre)}). Por favor ajusta la hora de inicio o las horas adicionales.`);
+
+                const preferred = availableHours.find(h => h.value === '14:00') || availableHours[0];
+                setFormData(prev => ({ ...prev, hora_inicio: preferred.value }));
+            }
+        } else if (selectedPkg && config && (formData.fecha_evento || formData.tipo_evento)) {
+            const duration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
+            notify(`Atención: El paquete seleccionado con tiempo extra (${duration}h) excede el horario total de operación del salón (${format12h(config.hora_apertura)} a ${format12h(config.hora_cierre)}).`);
         }
-    }, [availableHours, formData.hora_inicio]);
+    }, [availableHours, formData.hora_inicio, selectedPkg, config, formData.horas_adicionales, formData.fecha_evento, formData.tipo_evento]);
+
     // EFECTO: Sincronizar hora_fin automáticamente en el formData
     useEffect(() => {
         if (formData.hora_inicio && selectedPkg) {
@@ -322,7 +352,7 @@ const Reservar = () => {
             const totalDuration = (selectedPkg.duracion_horas || 0) + (formData.horas_adicionales || 0);
             const endH = (h + totalDuration) % 24;
             const time24 = `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-            
+
             if (formData.hora_fin !== time24) {
                 setFormData(prev => ({ ...prev, hora_fin: time24 }));
             }
@@ -330,7 +360,7 @@ const Reservar = () => {
     }, [formData.hora_inicio, formData.horas_adicionales, selectedPkg, formData.hora_fin]);
 
     const renderSummaryPanel = () => (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             className="bg-[#1a1a1a] text-white p-10 rounded-[40px] shadow-2xl space-y-10 w-full"
@@ -421,7 +451,7 @@ const Reservar = () => {
 
             <div className="container mx-auto px-4 md:px-8 py-32 md:py-40">
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 relative items-start">
-                    
+
                     {/* LEFT: FORM STEPS */}
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
@@ -429,8 +459,8 @@ const Reservar = () => {
                         className="flex-1 space-y-20"
                     >
                         <div className="pb-12 border-b border-gray-100 text-center">
-                             <h1 style={{ fontSize: '3.5rem', lineHeight: 1.1 }} className="font-serif italic mb-4">Configura Tu Experiencia</h1>
-                             <p className="text-[12px] uppercase tracking-[0.5em] text-gray-400 font-black">Luxury Reservation Portal</p>
+                            <h1 style={{ fontSize: '3.5rem', lineHeight: 1.1 }} className="font-serif italic mb-4">Configura Tu Experiencia</h1>
+                            <p className="text-[12px] uppercase tracking-[0.5em] text-gray-400 font-black">Luxury Reservation Portal</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-32">
@@ -447,11 +477,11 @@ const Reservar = () => {
                                             <motion.div
                                                 key={p.id}
                                                 whileHover={{ y: -5 }}
-                                                onClick={() => setFormData({ 
-                                                    ...formData, 
-                                                    paquete: p.id, 
+                                                onClick={() => setFormData({
+                                                    ...formData,
+                                                    paquete: p.id,
                                                     platillos_seleccionados: [],
-                                                    num_personas: p.capacidad_personas 
+                                                    num_personas: p.capacidad_personas
                                                 })}
                                                 className={`relative p-12 cursor-pointer transition-all duration-500 rounded-[40px] border-2 flex flex-col items-center text-center ${isSelected ? 'border-black bg-white shadow-2xl scale-[1.02]' : 'border-gray-100 bg-white hover:border-black/20'}`}
                                             >
@@ -478,7 +508,7 @@ const Reservar = () => {
 
                                 {/* Selector de Horas Adicionales */}
                                 {selectedPkg && (
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         className="mt-12 bg-white p-10 rounded-[40px] border border-gray-100 flex flex-col items-center justify-center text-center gap-8 shadow-sm"
@@ -488,7 +518,7 @@ const Reservar = () => {
                                             <p className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300">Añade horas extras al paquete seleccionado</p>
                                         </div>
                                         <div className="flex items-center gap-8 bg-gray-50 p-4 rounded-full px-8 border border-gray-100">
-                                            <button 
+                                            <button
                                                 type="button"
                                                 onClick={() => setFormData(prev => ({ ...prev, horas_adicionales: Math.max(0, prev.horas_adicionales - 1) }))}
                                                 className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all shadow-sm"
@@ -497,7 +527,7 @@ const Reservar = () => {
                                                 <span className="text-2xl font-serif">{formData.horas_adicionales}</span>
                                                 <p className="text-[8px] uppercase tracking-widest font-black text-gray-400">Horas</p>
                                             </div>
-                                            <button 
+                                            <button
                                                 type="button"
                                                 onClick={() => setFormData(prev => ({ ...prev, horas_adicionales: prev.horas_adicionales + 1 }))}
                                                 className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all shadow-sm"
@@ -507,12 +537,12 @@ const Reservar = () => {
                                 )}
                             </section>
 
-                             {/* 2. Datos generales y Contacto */}
-                             <section id="step2" className="space-y-16">
-                                 <div className="flex flex-col items-center text-center gap-4">
-                                     <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">02</span>
-                                     <h3 className="font-serif text-4xl uppercase tracking-tight">Logística del Evento</h3>
-                                 </div>
+                            {/* 2. Datos generales y Contacto */}
+                            <section id="step2" className="space-y-16">
+                                <div className="flex flex-col items-center text-center gap-4">
+                                    <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">02</span>
+                                    <h3 className="font-serif text-4xl uppercase tracking-tight">Logística del Evento</h3>
+                                </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 bg-white p-12 rounded-[40px] shadow-sm border border-gray-50">
                                     <div className="space-y-2">
                                         <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Categoría de Evento</label>
@@ -532,14 +562,14 @@ const Reservar = () => {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Hora de Inicio</label>
-                                        <select 
-                                            name="hora_inicio" 
-                                            value={formData.hora_inicio} 
-                                            onChange={handleChange} 
-                                            required 
+                                        <select
+                                            name="hora_inicio"
+                                            value={formData.hora_inicio}
+                                            onChange={handleChange}
+                                            required
                                             className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black appearance-none cursor-pointer"
                                         >
-                                            <option value="">{availableHours.length === 0 && selectedPkg ? 'No hay horarios disponibles (Paquete muy largo)' : 'Selecciona...'}</option>
+                                            <option value="">{availableHours.length === 0 && selectedPkg ? 'No hay horarios disponibles' : 'Selecciona...'}</option>
                                             {availableHours.map(h => (
                                                 <option key={h.value} value={h.value}>{h.label}</option>
                                             ))}
@@ -566,17 +596,7 @@ const Reservar = () => {
                                     </div>
                                     <div className="space-y-2 lg:col-span-2">
                                         <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Línea Telefónica</label>
-                                        <input 
-                                            type="tel" 
-                                            name="telefono_contacto" 
-                                            value={formData.telefono_contacto} 
-                                            onChange={handleChange} 
-                                            placeholder="10 dígitos (Ej: 2411234567)" 
-                                            required 
-                                            maxLength="10"
-                                            pattern="\d{10}"
-                                            className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" 
-                                        />
+                                        <input type="tel" name="telefono_contacto" value={formData.telefono_contacto} onChange={handleChange} placeholder="10 dígitos" required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" />
                                     </div>
                                 </div>
                             </section>
@@ -591,7 +611,7 @@ const Reservar = () => {
 
                                     {/* Category Navigator for Menu Selection */}
                                     <div className="bg-white p-6 rounded-full border border-gray-100 shadow-sm flex items-center justify-between mb-12">
-                                        <button 
+                                        <button
                                             type="button"
                                             onClick={() => setActiveCatIndex(Math.max(0, activeCatIndex - 1))}
                                             disabled={activeCatIndex === 0}
@@ -605,7 +625,7 @@ const Reservar = () => {
                                             <h4 className="font-serif text-2xl italic text-black">{categorias[activeCatIndex]?.nombre}</h4>
                                         </div>
 
-                                        <button 
+                                        <button
                                             type="button"
                                             onClick={() => setActiveCatIndex(Math.min(categorias.length - 1, activeCatIndex + 1))}
                                             disabled={activeCatIndex === categorias.length - 1}
@@ -616,7 +636,7 @@ const Reservar = () => {
                                     </div>
 
                                     <AnimatePresence mode="wait">
-                                        <motion.div 
+                                        <motion.div
                                             key={activeCatIndex}
                                             initial={{ opacity: 0, x: 20 }}
                                             animate={{ opacity: 1, x: 0 }}
@@ -627,8 +647,8 @@ const Reservar = () => {
                                             {platillos.filter(p => p.categoria === categorias[activeCatIndex]?.id).map(p => {
                                                 const isSelected = formData.platillos_seleccionados.includes(p.id);
                                                 return (
-                                                    <motion.div 
-                                                        key={p.id} 
+                                                    <motion.div
+                                                        key={p.id}
                                                         whileTap={{ scale: 0.98 }}
                                                         onClick={() => handlePlatilloToggle(p.id)}
                                                         className={`cursor-pointer transition-all p-6 rounded-[32px] border-2 flex items-center gap-6 ${isSelected ? 'border-black bg-white shadow-xl scale-[1.02]' : 'border-white bg-white hover:border-gray-100'}`}
@@ -648,7 +668,7 @@ const Reservar = () => {
                                 </section>
                             )}
 
-                             {/* 4. Complementos */}
+                            {/* 4. Complementos */}
                             <section id="step4" className="space-y-16">
                                 <div className="flex flex-col items-center text-center gap-4">
                                     <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">04</span>
@@ -674,7 +694,7 @@ const Reservar = () => {
                                 </div>
                             </section>
 
-                             {/* 5. Notas */}
+                            {/* 5. Notas */}
                             <section id="step5" className="space-y-16">
                                 <div className="flex flex-col items-center text-center gap-4">
                                     <span className="w-12 h-12 rounded-full border border-black flex items-center justify-center text-[10px] font-black">05</span>
@@ -686,7 +706,7 @@ const Reservar = () => {
                                     onChange={handleChange}
                                     rows="6"
                                     placeholder="Comparte detalles específicos para elevar tu evento..."
-                                    className="w-full border-2 border-black rounded-[30px] p-8 outline-none focus:border-black transition-all bg-white"
+                                    className="w-full border-2 border-gray-50 rounded-[30px] p-8 outline-none focus:border-black transition-all bg-gray-50/30"
                                 ></textarea>
                             </section>
 
@@ -716,35 +736,6 @@ const Reservar = () => {
             </div>
 
             <Footer />
-
-            {/* Success Reservation Modal */}
-            <AnimatePresence>
-                {showSuccess && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl"
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className="bg-white rounded-[3rem] p-12 md:p-20 flex flex-col items-center text-center max-w-2xl w-full shadow-[0_0_150px_rgba(0,0,0,0.3)]"
-                        >
-                            <div className="w-24 h-24 bg-black text-white rounded-full flex items-center justify-center mb-8 shadow-2xl">
-                                <CheckCircle size={48} />
-                            </div>
-                            <h3 className="text-4xl md:text-5xl font-serif text-black mb-6 uppercase tracking-tight">¡Reserva <span className="italic font-light">Exitosa</span>!</h3>
-                            <div className="w-12 h-1 bg-black/10 mb-8"></div>
-                            <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-black/40 leading-relaxed mb-10 max-w-sm mx-auto">
-                                Tu evento ha sido registrado y apartado en nuestra agenda. Serás redirigido al inicio en breve...
-                            </p>
-                            <Loader2 className="animate-spin text-black/20" size={28} />
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* Premium Toast System */}
             <AnimatePresence>
@@ -776,7 +767,7 @@ const Reservar = () => {
                             <AlertCircle size={18} className="text-white" />
                         </div>
                         <p className="text-[11px] uppercase tracking-[0.3em] font-black">{errorMsg}</p>
-                        <button 
+                        <button
                             onClick={() => setErrorMsg('')}
                             className="ml-auto hover:rotate-90 transition-transform p-1"
                         >

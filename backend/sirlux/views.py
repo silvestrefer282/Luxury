@@ -38,22 +38,16 @@ class ConfiguracionSistemaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class ReservacionViewSet(viewsets.ModelViewSet):
-    queryset = Reservacion.objects.select_related(
-        'cliente__usuario', 
-        'paquete', 
-        'menu'
-    ).prefetch_related(
-        'servicios_adicionales', 
-        'platillos_seleccionados'
-    ).all()
+    queryset = Reservacion.objects.all()
     serializer_class = ReservacionSerializer
 
     def get_queryset(self):
         user = self.request.user
-        if not user.is_authenticated:
-            return Reservacion.objects.none()
+        if not user or not user.is_authenticated:
+            # Para el calendario público permitimos ver todas las reservas
+            return Reservacion.objects.all()
+        
         if user.rol == Usuario.ADMINISTRADOR or user.is_staff or user.rol == Usuario.ENCARGADO:
-            # Si se pide específicamente "solo las mías" o si no es una petición del dashboard admin
             if self.request.query_params.get('personal') == 'true':
                 return Reservacion.objects.filter(cliente__usuario=user)
             return Reservacion.objects.all()
@@ -62,27 +56,14 @@ class ReservacionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Lógica de creación con cálculo automático
         data = self.request.data
-        try:
-            paquete = Paquete.objects.get(id=data['paquete'])
-        except (Paquete.DoesNotExist, KeyError, ValueError):
-            raise serializers.ValidationError("Paquete no válido o no encontrado.")
-
-        # Handle empty string or None for menu
-        menu_id = data.get('menu')
-        menu = None
-        if menu_id and str(menu_id).strip():
-            try:
-                menu = Menu.objects.get(id=menu_id)
-            except (Menu.DoesNotExist, ValueError):
-                menu = None
+        paquete = Paquete.objects.get(id=data['paquete'])
+        menu = Menu.objects.get(id=data['menu']) if data.get('menu') else None
         
         # Validar número de platillos vs tiempos del paquete
         platillos_ids = data.get('platillos_seleccionados', [])
-        if isinstance(platillos_ids, str):
-            platillos_ids = []
         if len(platillos_ids) > paquete.numero_tiempos:
             raise serializers.ValidationError(
-                f"El paquete '{paquete.nombre}' solo permite {paquete.numero_tiempos} tiempos. Ha seleccionado {len(platillos_ids)}."
+                f"El paquete '{paquete.nombre}' solo permite {paquete.numero_tiempos} tiempos (platillos). Ha seleccionado {len(platillos_ids)}."
             )
         
         hora_inicio = datetime.strptime(data['hora_inicio'], '%H:%M').time()
@@ -110,7 +91,6 @@ class ReservacionViewSet(viewsets.ModelViewSet):
         if platillos_ids:
             reserva.platillos_seleccionados.set(platillos_ids)
 
-
     @decorators.action(detail=False, methods=['get'])
     def disponibilidad(self, request):
         fecha_str = request.query_params.get('fecha')
@@ -137,15 +117,16 @@ class ReservacionViewSet(viewsets.ModelViewSet):
 
     @decorators.action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
     def calendario_publico(self, request):
-        hoy = timezone.now().date()
-        reservas = Reservacion.objects.filter(fecha_evento__gte=hoy).exclude(estado='Cancelada')
+        reservas = Reservacion.objects.exclude(estado='Cancelada')
         data = []
         for r in reservas:
             if r.fecha_evento:
                 data.append({
                     "id": r.id,
                     "fecha": r.fecha_evento.strftime('%Y-%m-%d'),
+                    "fecha_evento": r.fecha_evento.strftime('%Y-%m-%d'),
                     "estado": r.estado,
+                    "paquete_nombre": r.paquete.nombre if r.paquete else None,
                     "nombre_evento": f"Evento de {r.nombre_festejado}" if r.nombre_festejado else "Evento Reservado",
                 })
         return Response(data)
@@ -153,42 +134,24 @@ class ReservacionViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=['post'])
     def cancelar(self, request, pk=None):
         reserva = self.get_object()
+        config = ConfiguracionSistema.get_solo()
         hoy = timezone.now().date()
-        
-        if reserva.estado in ['Cancelada', 'Finalizada']:
-            return Response({"error": f"La reserva ya se encuentra en estado {reserva.estado}."}, status=status.HTTP_400_BAD_REQUEST)
-            
         dias_faltantes = (reserva.fecha_evento - hoy).days
         
-        # Reglas de penalización solicitadas:
-        # En caso de cancelación no hay reembolso de los $1000 que dejo como apartado y depósito de su evento
-        # Si cancela a los 2 meses de la fecha de su evento se le retendran $2000 mil pesos ADICIONAL AL DEPÓSITO
-        # Si cancela al mes o menos de la fecha de su evento se le retendran $4000 mil pesos ADICIONAL AL DEPÓSITO
-        
+        # Regla de penalización
         deposito = Decimal('1000.00')
-        penalizacion_adicional = Decimal('0.00')
-        
-        if dias_faltantes <= 30: # 1 mes o menos
-            penalizacion_adicional = Decimal('4000.00')
-        elif dias_faltantes <= 60: # 2 meses
-            penalizacion_adicional = Decimal('2000.00')
-            
-        retencion_total = deposito + penalizacion_adicional
+        if dias_faltantes >= config.dias_limite_cancelacion:
+            penalizacion = Decimal('2000.00')
+        else:
+            penalizacion = Decimal('4000.00')
             
         reserva.estado = 'Cancelada'
-        nota = f"Cancelada el {hoy}. Retención total: ${retencion_total} (Depósito: ${deposito} + Penalización adicional: ${penalizacion_adicional})."
-        
-        # Preservar observaciones previas si existen
-        if reserva.observaciones:
-            reserva.observaciones = f"{reserva.observaciones} | {nota}"
-        else:
-            reserva.observaciones = nota
-            
+        reserva.observaciones = f"Cancelada el {hoy}. Retención: {deposito} (depósito) + {penalizacion} (penalización)."
         reserva.save()
         
         return Response({
             "status": "Cancelada",
-            "retencion_total": retencion_total,
+            "retencion_total": deposito + penalizacion,
             "detalle": reserva.observaciones
         })
 
@@ -256,23 +219,8 @@ class CategoriaMenuViewSet(viewsets.ModelViewSet):
     serializer_class = CategoriaMenuSerializer
 
 class PlatilloViewSet(viewsets.ModelViewSet):
-    queryset = Platillo.objects.select_related('categoria').all()
+    queryset = Platillo.objects.all()
     serializer_class = PlatilloSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if not serializer.is_valid():
-            print("PLATILLO VALIDATION ERROR:", serializer.errors)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        except Exception as e:
-            print("PLATILLO CREATE EXCEPTION:", str(e))
-            import traceback
-            traceback.print_exc()
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ClienteViewSet(viewsets.ModelViewSet):
     queryset = Cliente.objects.all()
@@ -287,9 +235,7 @@ class GaleriaViewSet(viewsets.ModelViewSet):
     serializer_class = GaleriaSerializer
 
 class ContratoViewSet(viewsets.ModelViewSet):
-    queryset = Contrato.objects.select_related(
-        'reservacion__cliente__usuario'
-    ).prefetch_related('pagos').all()
+    queryset = Contrato.objects.all()
     serializer_class = ContratoSerializer
 
 class PagoContratoViewSet(viewsets.ModelViewSet):
@@ -301,24 +247,10 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     @decorators.action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def registro(self, request):
-        data = request.data.copy()
-        # The frontend sends 'nombre' — map it to 'first_name'
-        if 'nombre' in data and 'first_name' not in data:
-            data['first_name'] = data.pop('nombre')
-        # Auto-generate username from email if not provided
-        if 'username' not in data and 'email' in data:
-            base = data['email'].split('@')[0]
-            # Make username unique
-            username = base
-            counter = 1
-            while Usuario.objects.filter(username=username).exists():
-                username = f"{base}{counter}"
-                counter += 1
-            data['username'] = username
-        serializer = self.get_serializer(data=data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            # Todos los roles ahora pueden tener un perfil de cliente
+            # Todos los roles ahora pueden tener un perfil de cliente para hacer sus propias reservas
             Cliente.objects.get_or_create(usuario=user)
             token, _ = Token.objects.get_or_create(user=user)
             return Response({"token": token.key, "user": UsuarioSerializer(user).data}, status=status.HTTP_201_CREATED)
@@ -326,8 +258,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     @decorators.action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def login(self, request):
-        # The frontend sends { email, password } — accept both `email` and `username` keys
-        username_or_email = request.data.get('email') or request.data.get('username')
+        username_or_email = request.data.get('username')
         password = request.data.get('password')
         
         username = username_or_email
@@ -344,20 +275,17 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                 return Response({"error": "Cuenta inactiva."}, status=status.HTTP_403_FORBIDDEN)
             
             token, _ = Token.objects.get_or_create(user=user)
-            # Pre-cargar perfil_cliente para el serializer
-            user_opt = Usuario.objects.select_related('perfil_cliente').get(id=user.id)
-            return Response({"token": token.key, "user": UsuarioSerializer(user_opt).data})
+            return Response({"token": token.key, "user": UsuarioSerializer(user).data})
         
-        # Check if the user exists but is deactivated
-        user_check = Usuario.objects.filter(username=username).first() if username else None
+        # Check if the user exists but is deactivated, authenticate() returns None if is_active is boolean False
+        user_check = Usuario.objects.filter(username=username).first()
         if user_check and not user_check.estatus:
             return Response({"error": "Cuenta desactivada. Por favor, contacte a un administrador."}, status=status.HTTP_403_FORBIDDEN)
             
         return Response({"error": "Usuario no registrado o contraseña incorrecta."}, status=status.HTTP_401_UNAUTHORIZED)
 
-
 class TestimonioViewSet(viewsets.ModelViewSet):
-    queryset = Testimonio.objects.select_related('reservacion__cliente__usuario').all()
+    queryset = Testimonio.objects.all()
     serializer_class = TestimonioSerializer
 
     def get_queryset(self):
