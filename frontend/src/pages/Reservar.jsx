@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { paqueteService, reservacionService, servicioService, menuService, configuracionService } from '../services/api';
-import { Calendar, Users, Info, Star, Shield, ArrowRight, Clock, MapPin, Phone, Utensils, AlertCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Shield, Clock, Utensils, AlertCircle, X, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Reservar = () => {
@@ -18,15 +18,12 @@ const Reservar = () => {
     const [bookedSlots, setBookedSlots] = useState([]);
     const [reservacionesActivas, setReservacionesActivas] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [isBarFixed, setIsBarFixed] = useState(false);
     const [activeCatIndex, setActiveCatIndex] = useState(0);
     const [errorMsg, setErrorMsg] = useState('');
     const [successModal, setSuccessModal] = useState(false);
 
     const notify = (msg) => {
         setErrorMsg(msg);
-        // Eliminado el temporizador para que el usuario deba cerrarlo manualmente
-        // setTimeout(() => setErrorMsg(''), 4000); 
     };
 
     const [formData, setFormData] = useState({
@@ -160,7 +157,7 @@ const Reservar = () => {
         // --- VALIDACIÓN DE HORARIOS DEL SALÓN ---
         if (config) {
             const start = formData.hora_inicio;
-            const pkg = paquetes.find(p => p.id === formData.paquete);
+            const pkg = selectedPkg;
             const totalDuration = (pkg?.duracion_horas || 0) + (formData.horas_adicionales || 0);
 
             const [sh, sm] = start.split(':').map(Number);

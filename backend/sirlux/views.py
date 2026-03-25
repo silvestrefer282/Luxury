@@ -247,7 +247,22 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     @decorators.action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def registro(self, request):
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        
+        # Mapeo del frontend para ajustarse al modelo
+        if 'nombre' in data and not data.get('first_name'):
+            data['first_name'] = data.pop('nombre')
+        if 'apellidos' in data and not data.get('apellido_paterno'):
+            apellidos = data.pop('apellidos').split(' ', 1)
+            data['apellido_paterno'] = apellidos[0]
+            if len(apellidos) > 1:
+                data['apellido_materno'] = apellidos[1]
+                
+        # Username autogenerado si no viene
+        if not data.get('username') and data.get('email'):
+            data['username'] = data['email'].split('@')[0][:150]
+            
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             user = serializer.save()
             # Todos los roles ahora pueden tener un perfil de cliente para hacer sus propias reservas
@@ -258,7 +273,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     @decorators.action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def login(self, request):
-        username_or_email = request.data.get('username')
+        username_or_email = request.data.get('username') or request.data.get('email')
         password = request.data.get('password')
         
         username = username_or_email
