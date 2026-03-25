@@ -416,9 +416,9 @@ export const useAdminDashboard = () => {
         
         try {
             await paqueteService.create(data);
-            await fetchPackages();
             setIsAddingPackage(false);
             resetPackageForm();
+            await fetchPackages();
             triggerAlert("Paquete Creado", "La nueva propuesta editorial ha sido registrada exitosamente.");
         } catch (error) {
             triggerAlert("Error de Diseño", "Hubo un problema al materializar el paquete. Verifique los datos.");
@@ -476,6 +476,7 @@ export const useAdminDashboard = () => {
                 try {
                     await paqueteService.delete(id);
                     await fetchPackages();
+                    triggerAlert("Paquete Retirado", "El paquete ha sido eliminado de la colección exitosamente.");
                 } catch (error) {
                     triggerAlert("Error de Sistema", "No fue posible eliminar el registro en este momento.");
                 }
