@@ -131,7 +131,7 @@ const Disponibilidad = () => {
                                 className={`w-full h-full ${booking.type === 'pending' ? 'bg-black/5 border border-black/10' : 'bg-black'} flex flex-col items-center justify-center text-center p-4 shadow-xl overflow-hidden`}
                             >
                                 <span className={`text-[8px] uppercase tracking-[0.3em] font-black mb-1 ${booking.type === 'pending' ? 'text-black/60' : 'text-white'}`}>
-                                    {booking.type === 'pending' ? 'Reservada' : 'Liquidada'}
+                                    {booking.type === 'pending' ? 'Pendiente' : 'Reservado'}
                                 </span>
                                 <span className={`text-[9px] font-serif italic truncate w-full ${booking.type === 'pending' ? 'text-black/30' : 'text-white/40'}`}>
                                     {booking.label}
@@ -169,8 +169,8 @@ const Disponibilidad = () => {
                             Consulte las fechas disponibles para su próximo evento editorial en nuestro recinto exclusivo.
                         </p>
                         <div className="flex gap-10 text-[9px] uppercase tracking-widest font-black">
-                            <div className="flex items-center gap-3"><div className="w-2 h-2 bg-black"></div> Liquidada</div>
-                            <div className="flex items-center gap-3"><div className="w-2 h-2 bg-black/5 border border-black/10"></div> Reservada</div>
+                            <div className="flex items-center gap-3"><div className="w-2 h-2 bg-black"></div> Reservado</div>
+                            <div className="flex items-center gap-3"><div className="w-2 h-2 bg-black/5 border border-black/10"></div> Pendiente</div>
                             <div className="flex items-center gap-3"><div className="w-2 h-2 border border-black/10"></div> Disponible</div>
                         </div>
                     </div>
