@@ -150,7 +150,7 @@ const Paquetes = () => {
                                             className="group cursor-pointer flex flex-col"
                                             onClick={() => setSelectedPack(pack)}
                                         >
-                                            <div className="relative aspect-[3/4] overflow-hidden bg-primary-50 mb-10 shadow-sm border border-primary-100">
+                                            <div className="relative aspect-[3/4] overflow-hidden bg-primary-50 mb-10 shadow-sm border border-black">
                                                 <img
                                                     src={pack.img}
                                                     alt={pack.title}
@@ -171,7 +171,7 @@ const Paquetes = () => {
                                                 <p className="text-primary-500 font-light text-base leading-relaxed mb-10 line-clamp-2 max-w-sm italic">
                                                     {pack.desc}
                                                 </p>
-                                                <div className="mt-auto flex justify-between items-center pt-8 border-t border-primary-100">
+                                                <div className="mt-auto flex justify-between items-center pt-8 border-t border-black">
                                                     <div className="flex gap-10 text-[10px] uppercase tracking-[0.3em] font-bold text-primary-400">
                                                         <span className="flex items-center gap-3"><Users size={14} className="text-black" /> {pack.capacity} P</span>
                                                         <span className="flex items-center gap-3"><Clock size={14} className="text-black" /> {pack.duration}H</span>
@@ -195,9 +195,9 @@ const Paquetes = () => {
                                             Personaliza tu experiencia hasta el último detalle con nuestra selección de servicios a la carta.
                                         </p>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-primary-100">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-black">
                                         {extraServices.map((s, i) => (
-                                            <div key={i} className="p-12 border-b border-r border-primary-100 hover:bg-primary-50 transition-colors group">
+                                            <div key={i} className="p-12 border-b border-r border-black hover:bg-primary-50 transition-colors group">
                                                 <div className="flex items-start justify-between mb-10">
                                                     <div className="w-12 h-12 flex items-center justify-center bg-black text-white group-hover:scale-110 transition-transform duration-500">
                                                         <s.icon size={20} />

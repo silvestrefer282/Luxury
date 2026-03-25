@@ -11,7 +11,7 @@ const ServiceCard = ({ title, description, image, icon: Icon, price, delay, cate
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay }}
         viewport={{ once: true }}
-        className="group relative bg-white rounded-[2.5rem] overflow-hidden border border-primary-100 hover:border-accent/30 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/5 flex flex-col"
+        className="group relative bg-white rounded-[2.5rem] overflow-hidden border border-black hover:border-accent/30 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/5 flex flex-col"
     >
         <div className="relative h-72 overflow-hidden">
             <img
