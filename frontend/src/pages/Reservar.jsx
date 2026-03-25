@@ -463,20 +463,36 @@ const Reservar = () => {
                                     <h3 className="font-serif text-4xl uppercase tracking-tight">Selección de la Experiencia</h3>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                    {paquetes.map(p => {
+                                    {paquetes.filter(p => !formData.paquete || formData.paquete === p.id).map(p => {
                                         const isSelected = formData.paquete === p.id;
                                         return (
                                             <motion.div
                                                 key={p.id}
-                                                whileHover={{ y: -5 }}
-                                                onClick={() => setFormData({
+                                                layout
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                whileHover={!isSelected ? { y: -5 } : {}}
+                                                onClick={() => !isSelected && setFormData({
                                                     ...formData,
                                                     paquete: p.id,
                                                     platillos_seleccionados: [],
                                                     num_personas: p.capacidad_personas
                                                 })}
-                                                className={`relative p-12 cursor-pointer transition-all duration-500 rounded-[40px] border-2 flex flex-col items-center text-center ${isSelected ? 'border-black bg-white shadow-2xl scale-[1.02]' : 'border-gray-100 bg-white hover:border-black/20'}`}
+                                                className={`relative p-12 transition-all duration-500 rounded-[40px] border-2 flex flex-col items-center text-center ${isSelected ? 'border-black bg-white shadow-2xl scale-[1.02] mx-auto md:col-span-2 max-w-lg' : 'border-gray-100 bg-white hover:border-black/20 cursor-pointer'}`}
                                             >
+                                                {isSelected && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setFormData({ ...formData, paquete: null, platillos_seleccionados: [], num_personas: 0 });
+                                                        }}
+                                                        className="absolute top-6 right-6 w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-black hover:bg-black hover:text-white transition-all shadow-md z-30"
+                                                        title="Quitar Selección"
+                                                    >
+                                                        <X size={18} />
+                                                    </button>
+                                                )}
                                                 <h4 className="font-serif text-3xl uppercase tracking-tighter mb-2">{p.nombre}</h4>
                                                 <div className="flex items-baseline gap-1 mb-10">
                                                     <span className="text-4xl font-light tracking-tighter">${parseSafe(p.precio_base).toLocaleString()}</span>
