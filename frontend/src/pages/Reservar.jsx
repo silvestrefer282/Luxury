@@ -92,6 +92,13 @@ const Reservar = () => {
             }
         }
 
+        if (name === 'telefono_contacto') {
+            const numericValue = value.replace(/[^0-9]/g, '');
+            if (numericValue.length > 10) return;
+            setFormData(prev => ({ ...prev, [name]: numericValue }));
+            return;
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -578,7 +585,16 @@ const Reservar = () => {
                                     </div>
                                     <div className="space-y-2 lg:col-span-2">
                                         <label className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-300 block">Línea Telefónica</label>
-                                        <input type="tel" name="telefono_contacto" value={formData.telefono_contacto} onChange={handleChange} placeholder="10 dígitos" required className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" />
+                                        <input 
+                                            type="tel" 
+                                            name="telefono_contacto" 
+                                            value={formData.telefono_contacto} 
+                                            onChange={handleChange} 
+                                            placeholder="10 dígitos" 
+                                            required 
+                                            maxLength={10}
+                                            className="w-full bg-transparent border-b border-gray-100 py-3 font-serif text-lg outline-none focus:border-black" 
+                                        />
                                     </div>
                                 </div>
                             </section>
