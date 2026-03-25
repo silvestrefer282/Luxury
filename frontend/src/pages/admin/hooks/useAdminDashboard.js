@@ -154,6 +154,7 @@ export const useAdminDashboard = () => {
             setReservas(resp.data.map(r => ({
                 id: r.id,
                 cliente: r.cliente_nombre || 'Cliente Anonimo',
+                cliente_id: r.cliente, // Added to link with User/Client ID
                 telefono: r.telefono_contacto || r.cliente_telefono || 'S/N',
                 domicilio: r.domicilio_contacto || '',
                 festejado: r.nombre_festejado || '',
@@ -747,19 +748,38 @@ export const useAdminDashboard = () => {
     };
 
     const handleDeleteUser = async (userId) => {
+        // Encontrar reservaciones asociadas a este usuario (cliente)
+        const userReservas = reservas.filter(res => res.cliente_id === userId);
+        const hasReservas = userReservas.length > 0;
+
+        const confirmTitle = hasReservas ? "Eliminación con Reservas" : "Eliminar Registro";
+        const confirmMessage = hasReservas 
+            ? `Este usuario tiene ${userReservas.length} reservación(es) activa(s). Al aceptar, se eliminarán permanentemente tanto el usuario como todas sus reservaciones asociadas automáticamente. ¿Desea continuar?`
+            : "¿Desea eliminar permanentemente este usuario del ecosistema Luxury? Esta acción retirará todos sus permisos.";
+        
+        const confirmBtn = hasReservas ? "Eliminar Todo" : "Eliminar Cuenta";
+
         triggerConfirm(
-            "Eliminar Registro",
-            "¿Desea eliminar permanentemente este usuario del ecosistema Luxury? Esta acción retirará todos sus permisos.",
+            confirmTitle,
+            confirmMessage,
             async () => {
                 try {
+                    // Si tiene reservaciones, las eliminamos primero
+                    if (hasReservas) {
+                        await Promise.all(userReservas.map(res => reservacionService.delete(res.id)));
+                    }
+                    
                     await usuarioService.delete(userId);
                     await fetchUsers();
-                    triggerAlert("Usuario Eliminado", "La cuenta ha sido removida exitosamente.");
+                    if (hasReservas) await fetchReservations(); // Actualizar lista de reservas también
+                    
+                    triggerAlert("Proceso Finalizado", "El usuario y sus registros asociados han sido removidos exitosamente.");
                 } catch (error) {
-                    triggerAlert("Error", "No se pudo procesar la baja del usuario.");
+                    console.error("Error deleting user/reservations:", error);
+                    triggerAlert("Error de Sistema", "No se pudo procesar la baja completa del usuario.");
                 }
             },
-            "Eliminar Cuenta"
+            confirmBtn
         );
     };
 
