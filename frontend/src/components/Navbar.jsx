@@ -37,7 +37,7 @@ const Navbar = () => {
     };
 
     const handleNavLinkClick = (e, link) => {
-        if (link.name === 'Reservar' && !user) {
+        if (link.name === 'Reserva' && !user) {
             e.preventDefault();
             setIsMobileMenuOpen(false);
             openAuth('login');
@@ -120,7 +120,7 @@ const Navbar = () => {
                                         <Link to="/mis-reservas" className="block px-8 py-4 text-[10px] uppercase tracking-widest font-bold text-black/60 hover:text-black hover:bg-black/5 no-underline">Mis Reservas</Link>
 
                                         {user.rol === 'Administrador' && (
-                                            <Link to="/admin" className="block px-8 py-4 text-[10px] uppercase tracking-widest font-bold text-black/60 hover:text-black hover:bg-black/5 no-underline">Dashboard Admin</Link>
+                                            <Link to="/admin" className="block px-8 py-4 text-[10px] uppercase tracking-widest font-bold text-black/60 hover:text-black hover:bg-black/5 no-underline">Panel de Administración</Link>
                                         )}
 
                                         {user.rol === 'Encargado' && (
@@ -213,7 +213,7 @@ const Navbar = () => {
                                                 onClick={() => setIsMobileMenuOpen(false)}
                                                 className="py-4 px-4 text-[11px] uppercase tracking-widest font-bold hover:bg-black/5 rounded-xl no-underline text-black/70"
                                             >
-                                                Dashboard Admin
+                                                Panel de Administración
                                             </Link>
                                         )}
 

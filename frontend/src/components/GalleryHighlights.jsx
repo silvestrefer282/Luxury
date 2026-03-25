@@ -66,7 +66,7 @@ const GalleryHighlights = () => {
                     whileInView={{ opacity: 1 }}
                     className="text-primary-400 font-bold tracking-[0.5em] uppercase text-[10px] block mb-6"
                 >
-                    Visual Storytelling
+                    Narrativa Visual
                 </motion.span>
                 <motion.h2
                     initial={{ opacity: 0, y: 20 }}
@@ -113,7 +113,7 @@ const GalleryHighlights = () => {
                             
                             {/* Title Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-10 text-left">
-                                <span className="text-white/60 text-[10px] uppercase tracking-[0.4em] mb-4">Selected Event Photo</span>
+                                <span className="text-white/60 text-[10px] uppercase tracking-[0.4em] mb-4">Fotografía del Evento</span>
                                 <h3 className="text-white text-3xl font-serif italic mb-6">{highlights[currentIndex].title}</h3>
                             </div>
                         </motion.div>
